@@ -34,7 +34,7 @@ descriptions and are **not hardware-verified**. If you test one, please
 
 ## Getting started
 
-Prerequisites: [Rust](https://rustup.rs) (stable), Node.js 20+, and the
+Prerequisites: [Rust](https://rustup.rs) (stable), Node.js 24+, and the
 [Tauri 2 prerequisites](https://tauri.app/start/prerequisites/) for your OS.
 
 ```bash
