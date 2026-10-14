@@ -1,0 +1,8 @@
+/* Tailwind provides utilities and the theme only: the design system's own reset and component
+   rules live in styles/app.css, so Tailwind's preflight is deliberately not imported. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@import "./styles/tokens.css";
+@import "./styles/app.css";

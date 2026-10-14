@@ -1,0 +1,25 @@
+[package]
+name = "lumen"
+version = "0.1.0"
+description = "Lumen: control Bluetooth LED strips"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/jeanpfs/lumen"
+publish = false
+
+[lib]
+# The `_lib` suffix keeps the library name distinct from the binary on Windows
+# (https://github.com/rust-lang/cargo/issues/8519).
+name = "lumen_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+lumen-core = { path = "../../core", features = ["ble"] }
+tauri = { version = "2", features = [] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+# Same major as btleplug's own; used to hand btleplug the JVM when the library loads.
+jni = "0.22"

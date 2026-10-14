@@ -1,0 +1,17 @@
+[package]
+name = "probe"
+version = "0.1.0"
+edition = "2021"
+description = "CLI for probing Bluetooth LE LED strips"
+license = "MIT"
+repository = "https://github.com/jeanpfs/lumen"
+publish = false
+
+[dependencies]
+anyhow = "1"
+btleplug = "0.13"
+clap = { version = "4", features = ["derive"] }
+futures = "0.3"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+uuid = "1"
+lumen-core = { path = "../core", features = ["ble"] }

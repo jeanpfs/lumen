@@ -1,0 +1,160 @@
+/* ==========================================================================
+   Lumen — design tokens
+   All visual values live here. For React + Tailwind, map them in
+   tailwind.config.js → theme.extend: colors: { bg: 'var(--color-bg)', ... }.
+   ========================================================================== */
+:root {
+  color-scheme: dark;
+
+  /* ---------- Color · neutrals (dark, slight blue-violet tint) ---------- */
+  --color-bg: oklch(0.155 0.018 282);
+  --color-bg-deep: oklch(0.125 0.016 282);
+  --color-surface-1: oklch(0.205 0.022 282 / 0.78);   /* cards (glass) */
+  --color-surface-2: oklch(0.245 0.024 282 / 0.86);   /* controls, chips */
+  --color-surface-3: oklch(0.305 0.026 282);          /* hover, tracks */
+  --color-surface-solid: oklch(0.195 0.021 282);      /* sheets, popovers */
+  --color-border: oklch(0.98 0.01 282 / 0.08);
+  --color-border-strong: oklch(0.98 0.01 282 / 0.16);
+  --color-fg: oklch(0.965 0.006 282);
+  --color-fg-hover: oklch(0.87 0.01 282);             /* primary background on hover */
+  --color-fg-2: oklch(0.85 0.014 282);
+  --color-muted: oklch(0.72 0.018 282);               /* ≥ 4.5:1 over bg and surface-2 */
+  --color-faint: oklch(0.50 0.02 282);                /* decorative/disabled only */
+  --color-on-fg: oklch(0.17 0.02 282);                /* text over primary button */
+  --color-scrim: oklch(0.08 0.01 282 / 0.62);
+  --color-glass-hi: oklch(1 0 0 / 0.04);              /* 1px inner highlight */
+
+  /* ---------- Color · UI accent (focus, links) ---------- */
+  --color-accent: oklch(0.80 0.11 278);
+  --color-accent-soft: oklch(0.80 0.11 278 / 0.16);
+
+  /* ---------- Color · semantic ---------- */
+  --color-success: oklch(0.79 0.15 155);
+  --color-success-soft: oklch(0.79 0.15 155 / 0.14);
+  --color-warn: oklch(0.84 0.14 78);
+  --color-warn-soft: oklch(0.84 0.14 78 / 0.14);
+  --color-danger: oklch(0.72 0.17 25);
+  --color-danger-soft: oklch(0.72 0.17 25 / 0.14);
+
+  /* ---------- Color · test LED (pure colors for the wizard) ---------- */
+  --led-red: oklch(0.63 0.26 29);
+  --led-green: oklch(0.80 0.26 142);
+  --led-blue: oklch(0.47 0.30 264);
+  --led-yellow: oklch(0.93 0.20 105);
+  --led-white: oklch(0.98 0.01 90);
+  --led-orange: oklch(0.72 0.20 50);
+  --led-cyan: oklch(0.88 0.15 195);
+  --led-violet: oklch(0.55 0.26 300);
+  --led-off: oklch(0.26 0.01 282);
+
+  /* ---------- Live strip/group color (JS overrides) ---------- */
+  --live-rgb: 255 150 70;              /* "r g b" of the target color */
+  --live: rgb(var(--live-rgb));
+  --live-strength: 1;                  /* 0.15–1, follows brightness/on state */
+
+  /* ---------- Typography ---------- */
+  --font-sans: "Manrope", "Inter Tight", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --text-12: 12px;
+  --text-14: 14px;
+  --text-16: 16px;
+  --text-20: 20px;
+  --text-28: 28px;
+  --text-40: 40px;
+  --leading-tight: 1.12;
+  --leading-snug: 1.3;
+  --leading-body: 1.5;
+  --weight-regular: 450;
+  --weight-medium: 560;
+  --weight-bold: 680;
+  --tracking-display: -0.022em;
+  --tracking-heading: -0.012em;
+  --tracking-ui: 0.01em;
+  --tracking-caps: 0.08em;
+
+  /* ---------- Spacing (multiples of 4) ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---------- Radii ---------- */
+  --radius-xs: 8px;     /* small swatches, strip cells */
+  --radius-sm: 12px;    /* fields */
+  --radius-md: 16px;    /* rows, inner cards */
+  --radius-lg: 20px;    /* cards */
+  --radius-xl: 24px;    /* main cards, sheets */
+  --radius-pill: 999px;
+
+  /* ---------- Shadows and glow ---------- */
+  --shadow-1: inset 0 1px 0 var(--color-glass-hi), 0 8px 24px -14px oklch(0 0 0 / 0.6);
+  --shadow-2: inset 0 1px 0 var(--color-glass-hi), 0 24px 48px -18px oklch(0 0 0 / 0.7);
+  --shadow-pop: 0 28px 72px -16px oklch(0 0 0 / 0.78);
+  --shadow-thumb: 0 2px 8px oklch(0 0 0 / 0.5);
+  --glow-sm: 0 0 18px 0 rgb(var(--live-rgb) / calc(0.5 * var(--live-strength)));
+  --glow-lg: 0 28px 90px -30px rgb(var(--live-rgb) / calc(0.75 * var(--live-strength)));
+  --blur-glass: 20px;
+  --blur-halo: 48px;
+
+  /* ---------- Motion ---------- */
+  --dur-fast: 150ms;
+  --dur-base: 200ms;
+  --dur-slow: 250ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---------- Layout ---------- */
+  --touch: 44px;
+  --content-max: 1080px;
+  --bp-mobile: 860px; /* reference: the media query uses the literal value */
+
+  /* ---------- Layers ---------- */
+  --z-popover: 30;
+  --z-sheet: 40;
+  --z-wizard: 50;
+  --z-toast: 60;
+  --z-debug: 70;
+}
+
+/* Light theme (optional, Settings → Theme) */
+[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: oklch(0.972 0.006 282);
+  --color-bg-deep: oklch(0.94 0.008 282);
+  --color-surface-1: oklch(1 0 0 / 0.82);
+  --color-surface-2: oklch(0.955 0.008 282 / 0.95);
+  --color-surface-3: oklch(0.91 0.01 282);
+  --color-surface-solid: oklch(0.99 0.004 282);
+  --color-border: oklch(0.25 0.02 282 / 0.10);
+  --color-border-strong: oklch(0.25 0.02 282 / 0.18);
+  --color-fg: oklch(0.21 0.02 282);
+  --color-fg-hover: oklch(0.33 0.02 282);
+  --color-fg-2: oklch(0.33 0.02 282);
+  --color-muted: oklch(0.47 0.02 282);
+  --color-faint: oklch(0.70 0.015 282);
+  --color-on-fg: oklch(0.98 0.004 282);
+  --color-scrim: oklch(0.2 0.02 282 / 0.35);
+  --color-glass-hi: oklch(1 0 0 / 0.6);
+  --color-accent: oklch(0.50 0.15 278);
+  --color-accent-soft: oklch(0.50 0.15 278 / 0.12);
+  --color-success: oklch(0.52 0.14 155);
+  --color-warn: oklch(0.56 0.13 70);
+  --color-danger: oklch(0.55 0.19 25);
+  --led-off: oklch(0.86 0.01 282);
+  --shadow-1: inset 0 1px 0 var(--color-glass-hi), 0 8px 24px -16px oklch(0.2 0.03 282 / 0.35);
+  --shadow-2: inset 0 1px 0 var(--color-glass-hi), 0 24px 48px -20px oklch(0.2 0.03 282 / 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+  }
+}

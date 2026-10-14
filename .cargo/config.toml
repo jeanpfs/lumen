@@ -1,0 +1,7 @@
+# Android 15+ devices may use 16 KB memory pages; a library linked with the NDK 27 default (4 KB
+# segment alignment) triggers the system's "not compatible with 16 KB" warning and can fail to load.
+[target.aarch64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]
+
+[target.x86_64-linux-android]
+rustflags = ["-C", "link-arg=-Wl,-z,max-page-size=16384"]

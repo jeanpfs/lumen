@@ -1,0 +1,16 @@
+.venv/
+tools/scan.out
+__pycache__/
+target/
+node_modules/
+dist-win/
+dist-android/
+.DS_Store
+.superpowers/
+.impeccable/
+*.log
+.env
+.env.*
+*.keystore
+*.jks
+local.properties
