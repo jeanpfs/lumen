@@ -9,6 +9,9 @@
     "url": "git+https://github.com/jeanpfs/lumen.git"
   },
   "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
