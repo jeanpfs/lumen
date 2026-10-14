@@ -1,0 +1,36 @@
+name: Bug report
+description: Something in Lumen does not work as expected
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Lumen version
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [macOS, Windows, Android]
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Strip / controller
+      description: Advertised Bluetooth name and model, if known (e.g. ELK-BLEDOM, HX7118).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Steps to reproduce, what you expected, and what you saw.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output of `probe` or the app's `commands.log`, if relevant.
+      render: text

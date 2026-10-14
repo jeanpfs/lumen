@@ -12,6 +12,16 @@ many generic BLE LED controllers (ELK-BLEDOM family and similar).
 > **Status:** early. The HX7118 strip is confirmed working with the MR Star protocol family.
 > Effect/speed/direction frames are not hardware-verified on every device. See [`docs/hx7118-findings.md`](docs/hx7118-findings.md).
 
+## Tested hardware
+
+| Strip / controller | Advertised name | Protocol family | Status |
+|---|---|---|---|
+| HX7118 | `GATT--…` | `mrstar` (`FFF0` / `FFF3`, frames `BC … 55`) | Power, color, brightness verified. Effects, speed and direction not verified. |
+
+Other `ELK-*` families in `core/src/families.rs` are implemented from public protocol
+descriptions and are **not hardware-verified**. If you test one, please
+[open an issue](https://github.com/jeanpfs/lumen/issues/new/choose) so it can be listed here.
+
 ## Repository layout
 
 | Path | Purpose |

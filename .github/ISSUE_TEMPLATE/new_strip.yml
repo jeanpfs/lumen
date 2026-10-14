@@ -1,0 +1,39 @@
+name: New strip / controller support
+description: Ask for support for a strip that Lumen does not recognize, or report one that works
+labels: [hardware]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Advertised Bluetooth name
+      description: As shown by `probe scan` or the Lumen scan screen.
+      placeholder: ELK-BLEDOM
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Product / model and where you bought it
+  - type: textarea
+    id: gatt
+    attributes:
+      label: GATT services and characteristics
+      description: Output of `cargo run -p probe -- dump --name <name>`.
+      render: text
+  - type: textarea
+    id: frames
+    attributes:
+      label: Known write frames
+      description: Hex frames for on/off, color and brightness, and how you verified them. Mark anything unverified.
+      render: text
+  - type: dropdown
+    id: state
+    attributes:
+      label: Current behavior in Lumen
+      options:
+        - Not found in scan
+        - Found but not recognized
+        - Recognized and works
+        - Recognized but some commands fail
+    validations:
+      required: true
