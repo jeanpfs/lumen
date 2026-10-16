@@ -38,4 +38,15 @@ Please do not submit frames you have not verified, or mark them clearly as unver
 - Describe how you verified on real hardware, if applicable.
 - Do not commit build artifacts (`dist-win/`, `dist-android/`, `target/`, `node_modules/`).
 
+## Releasing
+
+1. Set the same new version in `app/package.json`, `app/package-lock.json`, `app/src-tauri/tauri.conf.json`
+   and the `version` of `core`, `probe` and `app/src-tauri` (plus their `Cargo.lock` entries).
+2. Move the `[Unreleased]` entries of `CHANGELOG.md` under a new `## [X.Y.Z] - date` heading.
+3. Merge to `main`, then push the tag `vX.Y.Z`. The Release workflow checks that the tag matches every
+   version, builds macOS, Windows and Android artifacts, and publishes the release using the matching
+   changelog section as notes. Releases stay flagged pre-release while the version is `0.x`.
+
+The Android APK is signed with a throwaway debug key generated in CI: installable, not publishable.
+
 By contributing you agree that your contributions are licensed under the MIT License.

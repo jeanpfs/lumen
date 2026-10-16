@@ -1,0 +1,220 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: verify tag and create draft release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 10
+    outputs:
+      release_id: ${{ steps.draft.outputs.release_id }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: verify tag matches manifests
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          fail=0
+          check() {
+            if [ "$VERSION" != "$2" ]; then
+              echo "::error::tag $GITHUB_REF_NAME does not match $1 version $2"
+              fail=1
+            fi
+          }
+          check app/package.json "$(node -p "require('./app/package.json').version")"
+          check app/src-tauri/tauri.conf.json "$(node -p "require('./app/src-tauri/tauri.conf.json').version")"
+          for f in app/src-tauri/Cargo.toml core/Cargo.toml probe/Cargo.toml; do
+            check "$f" "$(grep -m1 '^version = ' "$f" | cut -d'"' -f2)"
+          done
+          [ "$fail" -eq 0 ] || exit 1
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: create draft release
+        id: draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Release notes: the matching CHANGELOG section, without its heading.
+          sed -n "/^## \[${VERSION//./\\.}\]/,/^## /p" CHANGELOG.md | sed '1d;/^## /d' > changelog-notes.md
+          {
+            if grep -q '[^[:space:]]' changelog-notes.md; then cat changelog-notes.md; echo; fi
+            echo '## Installing'
+            echo
+            echo '**macOS (Apple Silicon)** — the app is ad-hoc signed and not notarized. If Gatekeeper blocks the first launch:'
+            echo
+            echo '    xattr -dr com.apple.quarantine /Applications/Lumen.app'
+            echo
+            echo '**Windows (x64)** — the installer is unsigned; SmartScreen reports an unknown publisher. Choose *More info* → *Run anyway*.'
+            echo
+            echo '**Android (arm64)** — the APK is signed with a throwaway debug key generated in CI. It is unsigned for distribution purposes: install it by sideloading (allow installs from unknown sources) and expect to uninstall before installing a build signed with a different key.'
+          } > release-notes.md
+          GEN=()
+          if ! grep -q '[^[:space:]]' changelog-notes.md; then GEN=(--generate-notes); fi
+          if ! gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release create "$GITHUB_REF_NAME" \
+              --draft \
+              --prerelease \
+              --title "Lumen $VERSION" \
+              "${GEN[@]}" \
+              --notes-file release-notes.md
+          fi
+          RELEASE_ID=$(gh api "repos/$GITHUB_REPOSITORY/releases" --paginate --jq '.[] | select(.tag_name == env.GITHUB_REF_NAME) | .id' | head -n1)
+          if [ -z "$RELEASE_ID" ]; then
+            echo "::error::could not resolve release id for $GITHUB_REF_NAME"
+            exit 1
+          fi
+          echo "release_id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: build ${{ matrix.label }}
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: macos-arm64
+            os: macos-latest
+            target: aarch64-apple-darwin
+            args: --bundles dmg
+          - label: windows-x64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: --bundles nsis
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - run: npm ci
+        working-directory: app
+      - name: configure macOS signing
+        if: runner.os == 'macOS'
+        env:
+          CERT: ${{ secrets.APPLE_CERTIFICATE }}
+          CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          API_KEY: ${{ secrets.APPLE_API_KEY }}
+          API_KEY_PATH: ${{ secrets.APPLE_API_KEY_PATH }}
+        run: |
+          set -euo pipefail
+          if [ -n "$CERT" ] && [ -n "$IDENTITY" ]; then
+            {
+              echo "APPLE_CERTIFICATE=$CERT"
+              echo "APPLE_CERTIFICATE_PASSWORD=$CERT_PASSWORD"
+              echo "APPLE_SIGNING_IDENTITY=$IDENTITY"
+            } >> "$GITHUB_ENV"
+            if [ -n "$API_ISSUER" ] && [ -n "$API_KEY" ] && [ -n "$API_KEY_PATH" ]; then
+              {
+                echo "APPLE_API_ISSUER=$API_ISSUER"
+                echo "APPLE_API_KEY=$API_KEY"
+                echo "APPLE_API_KEY_PATH=$API_KEY_PATH"
+              } >> "$GITHUB_ENV"
+            fi
+          else
+            echo "APPLE_SIGNING_IDENTITY=-" >> "$GITHUB_ENV"
+          fi
+      - uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CARGO_INCREMENTAL: 0
+        with:
+          projectPath: app
+          releaseId: ${{ needs.prepare.outputs.release_id }}
+          args: --target ${{ matrix.target }} ${{ matrix.args }}
+          uploadUpdaterJson: false
+          uploadUpdaterSignatures: false
+          retryAttempts: 1
+
+  android:
+    name: build android-arm64
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: aarch64-linux-android
+      - name: prepare Android SDK
+        run: |
+          set -euo pipefail
+          test -n "${ANDROID_NDK_LATEST_HOME:-}" || { echo "::error::NDK not preinstalled on runner"; exit 1; }
+          echo "NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+      - run: npm ci
+        working-directory: app
+      - name: generate throwaway debug keystore
+        run: |
+          keytool -genkeypair -keystore "$RUNNER_TEMP/debug.keystore" -storepass android -keypass android \
+            -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+      - name: build APK
+        env:
+          KEYSTORE: ${{ runner.temp }}/debug.keystore
+        run: ./scripts/build-android.sh
+      - name: upload APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          cp dist-android/Lumen-android-arm64.apk "Lumen_${VERSION}_android-arm64-debug-signed.apk"
+          gh release upload "$GITHUB_REF_NAME" "Lumen_${VERSION}_android-arm64-debug-signed.apk" --clobber
+
+  publish:
+    name: publish release
+    needs: [build, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 10
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # The project is early (0.x): every release stays flagged pre-release.
+          gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease --latest=false --repo "$GITHUB_REPOSITORY"
