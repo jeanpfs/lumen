@@ -6,7 +6,6 @@ node_modules/
 dist-win/
 dist-android/
 .DS_Store
-.superpowers/
 .impeccable/
 *.log
 .env

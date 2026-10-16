@@ -33,7 +33,7 @@ React UI (app/src) → state/store.tsx (useReducer) → state/sender.ts (coalesc
 | `app/src/lib/` | pure helpers (color, modes, profiles, wizard machine) |
 | `app/src/ui/` | shared components |
 | `app/src/test/` | vitest setup + `fakeBackend.ts` |
-| `docs/` | design specs (`docs/superpowers/`), `hx7118-findings.md` |
+| `docs/` | `hx7118-findings.md` (hardware findings) |
 | `scripts/` | cross-platform build scripts |
 | `dist-win/`, `dist-android/` | build outputs (artifacts, don't edit) |
 
@@ -74,7 +74,7 @@ macOS note: after reinstalling the app, quit it with `pkill -f Lumen.app/Content
 - `app/src-tauri/src/lib.rs` (commands, `run()`), `app/src-tauri/src/main.rs`, `tauri.conf.json`, `capabilities/default.json`
 - `app/src/api.ts`, `app/src/state/store.tsx`, `app/src/state/sender.ts`, `app/src/App.tsx`, `app/src/router.ts`
 - `Cargo.toml` (workspace; release: lto, codegen-units=1, panic=abort, strip), `app/package.json`, `app/vite.config.ts` (also vitest config)
-- `docs/superpowers/specs/2026-10-06-mr-star-clone-design.md` – read before changing protocol or UX; `docs/hx7118-findings.md` – hardware findings
+- `docs/hx7118-findings.md` – hardware findings; read before changing protocol or UX
 
 ## Runtime/Tooling Preferences
 - Package manager: **npm** (`app/package-lock.json`); no pnpm/yarn/bun. No `engines`/toolchain pin files.

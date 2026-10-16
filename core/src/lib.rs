@@ -1,5 +1,5 @@
 //! lumen-core: protocol, transport, pool and registry for BLE LED strips.
-//! No UI, no platform code. See docs/superpowers/specs/2026-10-06-mr-star-clone-design.md.
+//! No UI, no platform code.
 
 pub mod calibration;
 pub mod families;
