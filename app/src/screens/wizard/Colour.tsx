@@ -2,25 +2,18 @@ import { Choices } from "./Choices";
 import { useEffect } from "react";
 import { Icon } from "../../ui/Icon";
 import { StripPreview } from "../../ui/StripPreview";
+import { useT } from "../../i18n";
 import type { OrderName } from "../../lib/wizard";
-import { ORDER_MESSAGE } from "../../lib/wizard";
 
 const LED_NAME: Record<string, string> = { R: "red", G: "green", B: "blue", Y: "yellow", W: "white", N: "off" };
 
 const COLOURS = [
-  { k: "R", n: "Red", hue: 0 },
-  { k: "G", n: "Green", hue: 120 },
-  { k: "B", n: "Blue", hue: 240 },
+  { k: "R", hue: 0 },
+  { k: "G", hue: 120 },
+  { k: "B", hue: 240 },
 ];
 
-const ANSWERS = [
-  { k: "R", n: "Red" },
-  { k: "G", n: "Green" },
-  { k: "B", n: "Blue" },
-  { k: "Y", n: "Yellow" },
-  { k: "W", n: "White" },
-  { k: "N", n: "None" },
-];
+const ANSWERS = ["R", "G", "B", "Y", "W", "N"] as const;
 
 function hsvToRgb(h: number, s: number, v: number): [number, number, number] {
   const f = (n: number) => {
@@ -43,6 +36,7 @@ export default function WizardColour({
   onChoose: (value: string) => void;
   order: OrderName | null;
 }) {
+  const t = useT().wizard;
   // every question sends its own pure primary to the strip
   useEffect(() => {
     if (order === null && index < COLOURS.length) void onTest(index);
@@ -52,15 +46,15 @@ export default function WizardColour({
     return (
       <>
         <h1 className="t-28 wz-q" id="wz-title" tabIndex={-1}>
-          Calibration ready
+          {t.calibrationReady}
         </h1>
-        <p className="muted wz-sub">Based on what you saw, Lumen worked out this strip's channel order.</p>
+        <p className="muted wz-sub">{t.calibrationSub}</p>
 
         <div className="result result-ok">
           <Icon name="check" />
           <div>
-            <p className="strong">{ORDER_MESSAGE[order]}</p>
-            <p className="muted t-12">Channel order: <span className="mono">{order.toUpperCase()}</span></p>
+            <p className="strong">{t.orderMessage[order]}</p>
+            <p className="muted t-12">{t.channelOrder} <span className="mono">{order.toUpperCase()}</span></p>
           </div>
         </div>
       </>
@@ -74,29 +68,29 @@ export default function WizardColour({
   return (
     <>
       <h1 className="t-28 wz-q" id="wz-title" tabIndex={-1}>
-        What color do you see on the strip?
+        {t.whatColourSee}
       </h1>
       <p className="muted wz-sub">
-        {`Color ${index + 1} of 3. `}Answer based on what appears on the strip, not on the screen.
+        {t.colourSub(index + 1)}
       </p>
 
       <StripPreview colour={`${r} ${g} ${b}`} />
 
       <Choices
-        label="What color do you see?"
+        label={t.whatColourSeeShort}
         value={value}
         onChoose={onChoose}
-        options={ANSWERS.map((a) => ({
-          value: a.k,
-          label: a.n,
-          swatch: `var(--led-${LED_NAME[a.k]})`,
-          data: `ans-${a.k}`,
+        options={ANSWERS.map((k) => ({
+          value: k,
+          label: t.colourNames[k],
+          swatch: `var(--led-${LED_NAME[k]})`,
+          data: `ans-${k}`,
         }))}
       />
 
       <button type="button" className="btn btn-ghost" onClick={() => void onTest(index)}>
         <Icon name="refresh" size="sm" />
-        Send again
+        {t.sendAgain}
       </button>
 
       <div className="dots-prog" aria-hidden="true">

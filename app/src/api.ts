@@ -109,6 +109,8 @@ export const api = {
   deleteGroup: (group: string) => invoke<void>("delete_group", { group }),
   renameStrip: (strip: string, name: string) => invoke<void>("rename_strip", { strip, name }),
   profiles: () => invoke<ProfileInfo[]>("profiles"),
+  /** The OS's preferred language (BCP 47, e.g. `pt-BR`); null when the backend cannot read it. */
+  systemLocale: () => invoke<string | null>("system_locale"),
   setChannelOrder: (strip: string, order: ChannelOrder) => invoke<void>("set_channel_order", { strip, order }),
   wizardRecalibrate: (strip: string) => invoke<WizardState>("wizard_recalibrate", { strip }),
   wizardPowerTest: () => invoke<Report>("wizard_power_test"),

@@ -16,6 +16,7 @@ describe("persisted state", () => {
       favourites: [{ h: 1, s: 2 }],
       overrides: ["a"],
       theme: "light" as const,
+      language: "pt-BR" as const,
       onboarded: true,
     };
     savePersisted(saved);
@@ -34,6 +35,7 @@ describe("persisted state", () => {
         presumed: { good: { on: true, h: 1, s: 1, b: 1 }, bad: { on: "yes" } },
         favourites: [{ h: 1, s: 2 }, "nope"],
         theme: "purple",
+        language: "fr",
         onboarded: "true",
         target: { kind: "group", id: "living-room" },
       }),
@@ -42,6 +44,7 @@ describe("persisted state", () => {
     expect(Object.keys(p.presumed)).toEqual(["good"]);
     expect(p.favourites).toEqual([{ h: 1, s: 2 }]);
     expect(p.theme).toBe("dark");
+    expect(p.language).toBe("auto");
     expect(p.onboarded).toBe(false);
     expect("target" in p).toBe(false);
   });

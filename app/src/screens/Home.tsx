@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { PageHead, Presumed, PowerButton, Switch, LinkBadge, RetryButton, colourVar } from "../ui/parts";
 import { Icon } from "../ui/Icon";
+import { LanguageSheet } from "../ui/LanguageSheet";
+import { useT, type Messages } from "../i18n";
 import { rgbStr } from "../lib/color";
 import { profileName } from "../lib/profiles";
 import { groupStatus, stripStatus } from "../state/status";
@@ -11,22 +13,24 @@ import type { Link, TargetRef } from "../state/types";
 import type { Group, Strip } from "../api";
 import type { Go } from "../router";
 
-function greeting(): string {
+function greeting(home: Messages["targets"]["home"]): string {
   const h = new Date().getHours();
-  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  return h < 12 ? home.goodMorning : h < 18 ? home.goodAfternoon : home.goodEvening;
 }
 
 export function Home({ go }: { go: Go }) {
   const { state, actions } = useApp();
   const [newGroupOpen, setNewGroupOpen] = useState(false);
   const [typesOpen, setTypesOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const t = useT();
   const types = useProfiles();
   const { strips, groups } = state.snapshot;
   const unavailable = state.unavailable !== null;
   const linkOf = (id: string): Link => state.link[id] ?? "unknown";
 
   if (!state.loaded) {
-    return <PageHead title="Home" sub="Loading…" />;
+    return <PageHead title={t.targets.home.title} sub={t.targets.common.loading} />;
   }
 
   const byId = new Map(strips.map((s) => [s.id, s]));
@@ -37,28 +41,32 @@ export function Home({ go }: { go: Go }) {
   return (
     <>
       <PageHead
-        title={greeting()}
-        sub={
-          <span className="tnum">
-            {strips.length} {strips.length === 1 ? "strip" : "strips"} · {groups.length} {groups.length === 1 ? "group" : "groups"}
-            {unreachable ? ` · ${unreachable} unreachable` : ""}
-          </span>
-        }
+        title={greeting(t.targets.home)}
+        sub={<span className="tnum">{t.targets.home.summary(strips.length, groups.length, unreachable)}</span>}
         actions={
-          <div style={{ display: "flex", gap: "var(--space-2)" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
             <button type="button" className="btn btn-primary" onClick={() => go("add")}>
               <Icon name="plus" />
-              Add strip
+              {t.targets.common.addStrip}
             </button>
             <button type="button" className="btn btn-secondary" onClick={() => setNewGroupOpen(true)}>
               <Icon name="plus" />
-              New group
+              {t.targets.common.newGroup}
             </button>
             <button
               type="button"
               className="icon-btn"
-              aria-label={state.theme === "dark" ? "Use light theme" : "Use dark theme"}
-              title={state.theme === "dark" ? "Light theme" : "Dark theme"}
+              aria-label={t.settings.chooseLanguage}
+              title={t.settings.language}
+              onClick={() => setLanguageOpen(true)}
+            >
+              <Icon name="globe" />
+            </button>
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label={state.theme === "dark" ? t.targets.home.useLightTheme : t.targets.home.useDarkTheme}
+              title={state.theme === "dark" ? t.targets.home.lightTheme : t.targets.home.darkTheme}
               onClick={() => actions.setTheme(state.theme === "dark" ? "light" : "dark")}
             >
               <Icon name={state.theme === "dark" ? "sun" : "moon"} />
@@ -70,7 +78,7 @@ export function Home({ go }: { go: Go }) {
       {groups.length > 0 && (
         <section className="section">
           <div className="section-head">
-            <h2 className="t-16 strong">Groups</h2>
+            <h2 className="t-16 strong">{t.targets.home.groups}</h2>
           </div>
           <div className="grid-groups">
             {groups.map((g) => (
@@ -87,51 +95,56 @@ export function Home({ go }: { go: Go }) {
 
       <section className="section">
         <div className="section-head">
-          <h2 className="t-16 strong">Loose strips</h2>
+          <h2 className="t-16 strong">{t.targets.home.looseStrips}</h2>
           <span className="muted tnum">{loose.length}</span>
         </div>
         {loose.length > 0 ? (
           <ul className="list card">
             {loose.map((s) => {
-              const t: TargetRef = { kind: "strip", id: s.id };
-              const p = presumedOf(state, t);
+              const ref: TargetRef = { kind: "strip", id: s.id };
+              const p = presumedOf(state, ref);
               const link = linkOf(s.id);
-              const st = stripStatus(p, link, unavailable);
+              const st = stripStatus(p, link, unavailable, t.targets.status);
               const bad = link === "unreachable" || link === "retrying";
               return (
                 <li key={s.id} className="srow" style={colourVar(rgbStr(p.h, p.s))}>
-                  <button type="button" className="srow-main" aria-label={`Open ${s.name}`} onClick={() => go("strip", s.id)}>
+                  <button
+                    type="button"
+                    className="srow-main"
+                    aria-label={t.targets.common.open(s.name)}
+                    onClick={() => go("strip", s.id)}
+                  >
                     <span className={`orb sm ${st.k}`} aria-hidden="true">
                       <Icon name="strip" size="sm" />
                     </span>
                     <span className="srow-txt">
                       <span className="strong">{s.name}</span>
                       <span className="muted t-12">
-                        {profileName(s.profile)} · {st.label}
+                        {profileName(s.profile, t.targets.profiles)} · {st.label}
                       </span>
                     </span>
                   </button>
                   {bad ? <RetryButton link={link} onRetry={() => void actions.retry(s.id)} /> : <LinkBadge link={link} />}
                   <Switch
                     on={p.on && link !== "unreachable"}
-                    label={`Turn on or off ${s.name}`}
+                    label={t.targets.common.turnOnOff(s.name)}
                     disabled={link === "unreachable" || unavailable}
-                    onToggle={() => void actions.setPower(t, !p.on)}
+                    onToggle={() => void actions.setPower(ref, !p.on)}
                   />
                 </li>
               );
             })}
           </ul>
         ) : (
-          <p className="muted">All strips are in a group.</p>
+          <p className="muted">{t.targets.home.allInGroup}</p>
         )}
       </section>
 
       <button
         type="button"
         className="help-fab"
-        aria-label="Supported strip types"
-        title="Supported strip types"
+        aria-label={t.targets.home.supportedTypes}
+        title={t.targets.home.supportedTypes}
         onClick={() => setTypesOpen(true)}
       >
         <Icon name="help" />
@@ -141,6 +154,7 @@ export function Home({ go }: { go: Go }) {
       )}
 
       {newGroupOpen && <NewGroupSheet onClose={() => setNewGroupOpen(false)} go={go} />}
+      {languageOpen && <LanguageSheet onClose={() => setLanguageOpen(false)} />}
     </>
   );
 }
@@ -155,18 +169,19 @@ function GroupCard({
   go: Go;
 }) {
   const { state, actions } = useApp();
-  const t: TargetRef = { kind: "group", id: group.id };
-  const p = presumedOf(state, t);
+  const t = useT().targets;
+  const ref: TargetRef = { kind: "group", id: group.id };
+  const p = presumedOf(state, ref);
   const links = members.map((m) => state.link[m.id] ?? "unknown");
   const unavailable = state.unavailable !== null;
-  const st = groupStatus(p, links, unavailable);
+  const st = groupStatus(p, links, unavailable, t.status);
   return (
     <article className="gcard card" data-state={st.k} style={colourVar(rgbStr(p.h, p.s))}>
       <div className="gcard-top">
         <button
           type="button"
           className="gcard-main"
-          aria-label={`Open ${group.name}`}
+          aria-label={t.common.open(group.name)}
           onClick={() => go("group", group.id)}
         >
           <span className="orb" aria-hidden="true">
@@ -175,11 +190,11 @@ function GroupCard({
           <span className="gcard-txt">
             <span className="t-20">{group.name}</span>
             <span className="muted tnum">
-              {members.length} {members.length === 1 ? "strip" : "strips"} · {p.b}%
+              {t.common.stripCount(members.length)} · {p.b}%
             </span>
           </span>
         </button>
-        <PowerButton on={p.on && !unavailable} name={group.name} disabled={unavailable} onToggle={() => void actions.setPower(t, !p.on)} />
+        <PowerButton on={p.on && !unavailable} name={group.name} disabled={unavailable} onToggle={() => void actions.setPower(ref, !p.on)} />
       </div>
       <div className="mini" aria-hidden="true">
         {members.map((m) => {

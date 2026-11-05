@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Brazilian Portuguese UI. The app follows the phone's or computer's language (any Portuguese
+  gets pt-BR, everything else English); the globe button on Home picks a language manually.
+
 ### Fixed
 
 - Android: connecting to a strip no longer fails when it refuses or ignores the MTU exchange; the

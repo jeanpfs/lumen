@@ -19,6 +19,9 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 lumen-core = { path = "../../core", features = ["ble"] }
 tauri = { version = "2", features = [] }
+# The OS language (Android, macOS, Windows), so the UI can follow it; the WebView's navigator.language does not
+# reliably track it in Tauri (tauri-apps/wry#442, #1012).
+sys-locale = "0.3"
 
 [target.'cfg(target_os = "android")'.dependencies]
 # Same major as btleplug's own; used to hand btleplug the JVM when the library loads.

@@ -1,13 +1,15 @@
 import { useEffect, useRef } from "react";
 import { Icon, type IconName } from "../ui/Icon";
 import { useApp } from "../state/store";
+import { useT } from "../i18n";
 
-const PERMS: { icon: IconName; name: string; why: string; required: boolean }[] = [
-  { icon: "bt", name: "Bluetooth", why: "To find and control strips nearby. The system asks on the first scan.", required: true },
+const PERMS: { icon: IconName; name: string; why: "permBluetoothWhy"; required: boolean }[] = [
+  { icon: "bt", name: "Bluetooth", why: "permBluetoothWhy", required: true },
 ];
 
 export function Welcome({ onDone }: { onDone: () => void }) {
   const { actions } = useApp();
+  const t = useT().shell;
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => title.current?.focus(), []);
 
@@ -19,10 +21,10 @@ export function Welcome({ onDone }: { onDone: () => void }) {
           Lumen
         </div>
         <h1 className="t-40" id="wl-title" tabIndex={-1} ref={title}>
-          Your LED strips, from any brand, in one place.
+          {t.welcomeTitle}
         </h1>
         <p className="muted welcome-lead">
-          Groups of any size, color and brightness per strip, and effects. The system may ask for these permissions when they are needed.
+          {t.welcomeLead}
         </p>
         <ul className="perms">
           {PERMS.map((p) => (
@@ -32,9 +34,9 @@ export function Welcome({ onDone }: { onDone: () => void }) {
               </span>
               <div className="perm-txt">
                 <span className="strong">
-                  {p.name} <span className="muted t-12">· {p.required ? "required" : "optional"}</span>
+                  {p.name} <span className="muted t-12">· {p.required ? t.permRequired : t.permOptional}</span>
                 </span>
-                <span className="muted t-12">{p.why}</span>
+                <span className="muted t-12">{t[p.why]}</span>
               </div>
             </li>
           ))}
@@ -48,7 +50,7 @@ export function Welcome({ onDone }: { onDone: () => void }) {
               onDone();
             }}
           >
-            Continue
+            {t.continue}
             <Icon name="chevR" size="sm" />
           </button>
         </div>

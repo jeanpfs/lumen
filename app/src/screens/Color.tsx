@@ -3,20 +3,21 @@ import { Icon } from "../ui/Icon";
 import { RetryButton, colourVar } from "../ui/parts";
 import { clamp, hexToHsv, hsvHex, hsvToRgb, protoB, protoS, rgbStr } from "../lib/color";
 import { presumedOf, useApp } from "../state/store";
+import { useT } from "../i18n";
 import { type TargetRef } from "../state/types";
 
 const PRESETS = [
-  { n: "Amber", h: 28, s: 78 },
-  { n: "Warm white", h: 34, s: 32 },
-  { n: "Cool white", h: 210, s: 8 },
-  { n: "Red", h: 0, s: 100 },
-  { n: "Orange", h: 18, s: 95 },
-  { n: "Green", h: 130, s: 85 },
-  { n: "Cyan", h: 186, s: 80 },
-  { n: "Blue", h: 225, s: 90 },
-  { n: "Violet", h: 265, s: 72 },
-  { n: "Pink", h: 325, s: 58 },
-];
+  { k: "amber", h: 28, s: 78 },
+  { k: "warmWhite", h: 34, s: 32 },
+  { k: "coolWhite", h: 210, s: 8 },
+  { k: "red", h: 0, s: 100 },
+  { k: "orange", h: 18, s: 95 },
+  { k: "green", h: 130, s: 85 },
+  { k: "cyan", h: 186, s: 80 },
+  { k: "blue", h: 225, s: 90 },
+  { k: "violet", h: 265, s: 72 },
+  { k: "pink", h: 325, s: 58 },
+] as const;
 
 function drawWheel(cv: HTMLCanvasElement) {
   const size = cv.clientWidth;
@@ -48,6 +49,7 @@ function drawWheel(cv: HTMLCanvasElement) {
 
 export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?: string }) {
   const { state, actions } = useApp();
+  const t = useT().targets;
   const p = presumedOf(state, target);
 
   const wheelRef = useRef<HTMLDivElement>(null);
@@ -91,7 +93,7 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
     if (target.kind !== "group") return;
     // followGroup drops the strip's own color and sends it the group's color and brightness
     for (const id of ownMembers) actions.followGroup(id, target.id);
-    actions.notify(ownMembers.length === 1 ? "Group color applied to the strip" : `Group color applied to ${ownMembers.length} strips`);
+    actions.notify(t.color.groupColorApplied(ownMembers.length));
   };
 
   const set = (h: number, s: number) => {
@@ -155,7 +157,7 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
     <>
       {isUnreachable && (
         <div className="result result-warn">
-          <p>{target.kind === "strip" ? "Can't reach the strip. Commands are queued." : "A strip in the group can't be reached."}</p>
+          <p>{target.kind === "strip" ? t.color.stripUnreachable : t.color.groupUnreachable}</p>
           {target.kind === "strip" ? (
             <RetryButton link={state.link[target.id] ?? "unknown"} onRetry={() => void actions.retry(target.id)} />
           ) : (
@@ -164,7 +166,7 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
               for (const m of unreach) void actions.retry(m);
             }}>
               <Icon name="refresh" size="sm" />
-              Try again
+              {t.common.tryAgain}
             </button>
           )}
         </div>
@@ -172,24 +174,24 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
       {target.kind === "group" && ownMembers.length > 0 && (
         <div className="apply-all card">
           <div className="apply-all-txt">
-            <span className="strong">Apply to all strips</span>
+            <span className="strong">{t.color.applyToAllStrips}</span>
             <span className="muted t-12">
-              {`${ownMembers.length} ${ownMembers.length === 1 ? "strip has" : "strips have"} a saved color of their own. This replaces it with the group's color and brightness.`}
+              {t.color.applyToAllHint(ownMembers.length)}
             </span>
           </div>
           <button type="button" className="btn btn-secondary" onClick={applyToAll}>
             <Icon name="palette" size="sm" />
-            Apply to all
+            {t.color.applyToAll}
           </button>
         </div>
       )}
       {groupsOfStrip.length > 0 && (
-        <div className="seg seg-sm follow-seg" role="radiogroup" aria-label="Where this strip's color comes from">
+        <div className="seg seg-sm follow-seg" role="radiogroup" aria-label={t.color.colorSource}>
           <button type="button" role="radio" aria-checked={!isOwn} onClick={() => preferredGroup && actions.followGroup(target.id, preferredGroup)}>
-            Follow group
+            {t.common.followGroup}
           </button>
           <button type="button" role="radio" aria-checked={isOwn} onClick={() => actions.setStripOwnColour(target.id, p.h, p.s)}>
-            Own color
+            {t.common.ownColor}
           </button>
         </div>
       )}
@@ -200,11 +202,11 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
             className={`wheel-wrap ${dragging ? "is-drag" : ""}`}
             tabIndex={0}
             role="slider"
-            aria-label="Color wheel. Left and right arrows change the hue; up and down, the saturation."
+            aria-label={t.color.wheelLabel}
             aria-valuemin={0}
             aria-valuemax={360}
             aria-valuenow={p.h}
-            aria-valuetext={`Hue ${p.h}°, saturation ${p.s}%`}
+            aria-valuetext={t.color.wheelValue(p.h, p.s)}
             onPointerDown={down}
             onPointerMove={move}
             onPointerUp={up}
@@ -219,7 +221,7 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
           <section className="card card-pad">
             <div className="ctl-head">
               <label htmlFor="rng-b" className="strong">
-                Brightness
+                {t.common.brightness}
               </label>
               <output className="t-20 tnum">{p.b}%</output>
             </div>
@@ -243,16 +245,16 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
           </section>
 
           <section className="card card-pad">
-            <h2 className="eyebrow">Presets</h2>
+            <h2 className="eyebrow">{t.color.presets}</h2>
             <div className="sw-row">
               {PRESETS.map((c) => (
                 <button
-                  key={c.n}
+                  key={c.k}
                   type="button"
                   className="sw-btn"
                   style={colourVar(rgbStr(c.h, c.s))}
-                  aria-label={c.n}
-                  title={c.n}
+                  aria-label={t.color.presetNames[c.k]}
+                  title={t.color.presetNames[c.k]}
                   onClick={() => {
                     set(c.h, c.s);
                     void actions.flush();
@@ -261,10 +263,10 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
               ))}
             </div>
             <div className="ctl-head fav-head">
-              <h2 className="eyebrow">Favorites</h2>
+              <h2 className="eyebrow">{t.color.favorites}</h2>
               <button type="button" className="btn btn-ghost btn-tight" onClick={() => actions.saveFavourite(p.h, p.s)}>
                 <Icon name="star" size="sm" />
-                Save current color
+                {t.color.saveCurrent}
               </button>
             </div>
             <div className="sw-row">
@@ -275,7 +277,7 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
                     type="button"
                     className="sw-btn"
                     style={colourVar(rgbStr(c.h, c.s))}
-                    aria-label={`Favorite ${i + 1}: ${hsvHex(c.h, c.s)}`}
+                    aria-label={t.color.favorite(i + 1, hsvHex(c.h, c.s))}
                     onClick={() => {
                       set(c.h, c.s);
                       void actions.flush();
@@ -283,7 +285,7 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
                   />
                 ))
               ) : (
-                <span className="muted t-12">No favorites yet.</span>
+                <span className="muted t-12">{t.color.noFavorites}</span>
               )}
             </div>
           </section>
@@ -291,7 +293,7 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
           <section className="card card-pad values">
             <div className="val">
               <label htmlFor="in-h" className="eyebrow">
-                Hue
+                {t.color.hue}
               </label>
               <div className="val-in">
                 <input
@@ -309,7 +311,7 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
             </div>
             <div className="val">
               <label htmlFor="in-s" className="eyebrow">
-                Saturation
+                {t.color.saturation}
               </label>
               <div className="val-in">
                 <input
@@ -327,7 +329,7 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
             </div>
             <div className="val">
               <label htmlFor="in-hex" className="eyebrow">
-                Hex
+                {t.color.hex}
               </label>
               <div className="val-in">
                 <input
@@ -353,12 +355,12 @@ export function ColorTab({ target, fromGroup }: { target: TargetRef; fromGroup?:
               </div>
             </div>
             <details className="details">
-              <summary>Details</summary>
+              <summary>{t.color.details}</summary>
               <dl>
                 <div>
-                  <dt>Sent to the strip</dt>
+                  <dt>{t.color.sentToStrip}</dt>
                   <dd className="tnum">
-                    hue {p.h} · saturation {protoS(p.s)} · brightness {protoB(p.b)} of 1000
+                    {t.color.sentValues(p.h, protoS(p.s), protoB(p.b))}
                   </dd>
                 </div>
               </dl>

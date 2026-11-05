@@ -1,10 +1,13 @@
+import { useT } from "../../i18n";
+
 export default function WizardEffects() {
+  const t = useT().wizard;
   return (
     <>
       <h1 className="t-28 wz-q" id="wz-title" tabIndex={-1}>
-        Effects live on the strip's page
+        {t.effectsTitle}
       </h1>
-      <p className="muted wz-sub">The wizard does not need to test them. When you finish, open the strip's Modes tab.</p>
+      <p className="muted wz-sub">{t.effectsSub}</p>
     </>
   );
 }

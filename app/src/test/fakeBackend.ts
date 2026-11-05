@@ -39,6 +39,7 @@ export function fakeBackend(over: Partial<Backend> = {}): FakeBackendResult {
     deleteGroup: vi.fn(ok),
     renameStrip: vi.fn(ok),
     profiles: vi.fn(async () => []),
+    systemLocale: vi.fn(async () => null),
     setChannelOrder: vi.fn(ok),
     wizardRecalibrate: vi.fn(),
     wizardStart: vi.fn(),

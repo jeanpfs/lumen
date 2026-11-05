@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Icon } from "./Icon";
+import { MESSAGES } from "../i18n";
+import { documentLang } from "../i18n/lang";
 
 interface Props {
   children: ReactNode;
@@ -25,11 +27,12 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public render() {
+    const t = MESSAGES[documentLang()].shell;
     if (this.state.hasError) {
       return (
         <div className="error-boundary" style={{ padding: "24px", textAlign: "center" }}>
           <Icon name="alert" size="lg" />
-          <h1 className="t-20 strong">Something went wrong</h1>
+          <h1 className="t-20 strong">{t.errorTitle}</h1>
           {this.state.error && (
             <p className="muted t-12" style={{ marginTop: "8px", wordBreak: "break-word" }}>
               {this.state.error.message}
@@ -40,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
             onClick={() => window.location.reload()}
             style={{ marginTop: "16px" }}
           >
-            Reload
+            {t.errorReload}
           </button>
         </div>
       );

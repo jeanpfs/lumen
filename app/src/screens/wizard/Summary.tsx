@@ -2,6 +2,7 @@ import type { Group } from "../../api";
 import type { WizardModel } from "../../lib/wizardMachine";
 import { intensityOutcome } from "../../lib/wizard";
 import { profileName } from "../../lib/profiles";
+import { useT } from "../../i18n";
 import { Icon } from "../../ui/Icon";
 
 export default function WizardSummary({
@@ -18,36 +19,38 @@ export default function WizardSummary({
   /** Opens the new-group modal. */
   onCreateGroup: () => void;
 }) {
+  const all = useT();
+  const t = all.wizard;
   const outcome = intensityOutcome(model.pick);
   const hasWhite = model.hasWhite ?? model.capabilities?.white ?? false;
   const chips = [
-    model.capabilities?.color && "Color",
-    model.capabilities?.brightness && "Brightness",
-    hasWhite && "White",
+    model.capabilities?.color && t.caps.color,
+    model.capabilities?.brightness && t.caps.brightness,
+    hasWhite && t.caps.white,
   ].filter((c): c is string => !!c);
   return (
     <>
       <h1 className="t-28 wz-q" id="wz-title" tabIndex={-1}>
-        {model.recalibrate ? "Recalibration complete" : "Give your strip a name"}
+        {model.recalibrate ? t.recalibrationComplete : t.nameYourStrip}
       </h1>
-      <p className="muted wz-sub">You can change all of this later on the strip's page.</p>
+      <p className="muted wz-sub">{t.summarySub}</p>
 
       <div className="wz-form">
         <label className="field-l">
-          <span className="strong">Name</span>
+          <span className="strong">{t.nameLabel}</span>
           <input
             className="field"
             type="text"
             value={model.name}
             onChange={(e) => onNameChange(e.target.value)}
-            placeholder="E.g. Desk, Behind the TV"
+            placeholder={t.namePlaceholder}
             maxLength={32}
           />
         </label>
 
         <div className="field-l">
-          <span className="strong">Add to groups</span>
-          <p className="muted t-12">{groups.length === 0 ? "· you don't have any groups yet: create the first one here" : "· a strip can be in several groups"}</p>
+          <span className="strong">{t.addToGroups}</span>
+          <p className="muted t-12">{groups.length === 0 ? t.noGroupsYet : t.severalGroups}</p>
           <div className="chips">
             {groups.map((g) => (
               <button
@@ -61,7 +64,7 @@ export default function WizardSummary({
             ))}
             <button type="button" className="chip chip-btn" onClick={onCreateGroup}>
               <Icon name="plus" size="sm" />
-              New group
+              {t.newGroup}
             </button>
           </div>
         </div>
@@ -73,32 +76,32 @@ export default function WizardSummary({
             <Icon name="strip" />
           </span>
           <div>
-            <p className="eyebrow">Detected profile</p>
-            <p className="t-20">{model.name || "Unnamed strip"}</p>
+            <p className="eyebrow">{t.detectedProfile}</p>
+            <p className="t-20">{model.name || t.unnamedStrip}</p>
           </div>
         </div>
         <dl className="profile-dl">
           {model.profileId && (
             <div>
-              <dt>Family</dt>
-              <dd>{profileName(model.profileId)}</dd>
+              <dt>{t.family}</dt>
+              <dd>{profileName(model.profileId, all.targets.profiles)}</dd>
             </div>
           )}
           <div>
-            <dt>Channel order</dt>
-            <dd>{model.order ? model.order.toUpperCase() : "RGB (untested)"}</dd>
+            <dt>{t.channelOrderLabel}</dt>
+            <dd>{model.order ? model.order.toUpperCase() : t.rgbUntested}</dd>
           </div>
           <div>
-            <dt>Minimum brightness</dt>
-            <dd>{outcome.kind === "ok" ? `${outcome.minPercent}%` : "untested"}</dd>
+            <dt>{t.minBrightness}</dt>
+            <dd>{outcome.kind === "ok" ? `${outcome.minPercent}%` : t.untested}</dd>
           </div>
           <div>
-            <dt>Visible steps</dt>
-            <dd>{outcome.kind === "ok" ? outcome.steps : "untested"}</dd>
+            <dt>{t.visibleSteps}</dt>
+            <dd>{outcome.kind === "ok" ? outcome.steps : t.untested}</dd>
           </div>
           <div>
-            <dt>White</dt>
-            <dd>{model.hasWhite === null ? "Not reported" : model.hasWhite ? "RGBW" : "RGB only"}</dd>
+            <dt>{t.whiteLabel}</dt>
+            <dd>{model.hasWhite === null ? t.notReported : model.hasWhite ? t.rgbw : t.rgbOnly}</dd>
           </div>
         </dl>
         <div className="chips">

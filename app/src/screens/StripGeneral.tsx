@@ -1,5 +1,6 @@
 import { Icon } from "../ui/Icon";
 import { LinkBadge, RetryButton } from "../ui/parts";
+import { useT } from "../i18n";
 import { percentOfProto } from "../lib/color";
 import { profileName } from "../lib/profiles";
 import { useApp } from "../state/store";
@@ -9,6 +10,7 @@ const ORDERS = ["Rgb", "Rbg", "Grb", "Gbr", "Brg", "Bgr"] as const;
 
 export function StripGeneral({ stripId, go }: { stripId: string; go: Go }) {
   const { state, actions } = useApp();
+  const t = useT().targets;
 
   const groupsOfStrip = state.snapshot.groups.filter((g) => g.members.includes(stripId));
   const strip = state.snapshot.strips.find((s) => s.id === stripId);
@@ -29,7 +31,7 @@ export function StripGeneral({ stripId, go }: { stripId: string; go: Go }) {
 
       {groupsOfStrip.length > 0 && (
         <div className="set-row">
-          <span className="muted">Groups</span>
+          <span className="muted">{t.stripGeneral.groups}</span>
           <div className="row-gap">
             {groupsOfStrip.map((g) => (
               <div key={g.id} className="row-gap">
@@ -43,7 +45,7 @@ export function StripGeneral({ stripId, go }: { stripId: string; go: Go }) {
                 <button
                   type="button"
                   className="icon-btn"
-                  aria-label={`Leave ${g.name}`}
+                  aria-label={t.stripGeneral.leave(g.name)}
                   onClick={() => void actions.removeFromGroup(g.id, [stripId])}
                 >
                   <Icon name="x" size="sm" />
@@ -56,7 +58,7 @@ export function StripGeneral({ stripId, go }: { stripId: string; go: Go }) {
 
       {state.snapshot.groups.length > groupsOfStrip.length && (
         <div className="set-row">
-          <span className="muted">Add to</span>
+          <span className="muted">{t.stripGeneral.addTo}</span>
           <div className="row-gap">
             {state.snapshot.groups
               .filter((g) => !groupsOfStrip.find((og) => og.id === g.id))
@@ -65,7 +67,7 @@ export function StripGeneral({ stripId, go }: { stripId: string; go: Go }) {
                   key={g.id}
                   type="button"
                   className="chip chip-btn"
-                  aria-label={`Add to ${g.name}`}
+                  aria-label={t.stripGeneral.addToGroup(g.name)}
                   onClick={() => void actions.addToGroup(g.id, [stripId])}
                 >
                   {g.name}
@@ -76,7 +78,7 @@ export function StripGeneral({ stripId, go }: { stripId: string; go: Go }) {
       )}
 
       <div className="set-row">
-        <label htmlFor={`order-${stripId}`}>Color order</label>
+        <label htmlFor={`order-${stripId}`}>{t.stripGeneral.colorOrder}</label>
         <select
           id={`order-${stripId}`}
           className="select mono"
@@ -92,27 +94,27 @@ export function StripGeneral({ stripId, go }: { stripId: string; go: Go }) {
       </div>
 
       <div className="set-row">
-        <span className="muted">Family</span>
-        <span>{profileName(strip.profile)}</span>
+        <span className="muted">{t.stripGeneral.family}</span>
+        <span>{profileName(strip.profile, t.profiles)}</span>
       </div>
 
       <div className="set-row">
-        <span className="muted">Minimum useful brightness</span>
+        <span className="muted">{t.stripGeneral.minBrightness}</span>
         <span className="tnum">{percentOfProto(cal.min_brightness)}%</span>
       </div>
 
       <div className="set-row">
-        <span className="muted">White</span>
-        <span>{cal.has_white ? "Yes" : "No"}</span>
+        <span className="muted">{t.common.white}</span>
+        <span>{cal.has_white ? t.stripGeneral.yes : t.stripGeneral.no}</span>
       </div>
 
       <div className="set-row">
         <span>
-          Redo the tests <span className="muted t-12 block">Colors, white and intensity</span>
+          {t.stripGeneral.redoTests} <span className="muted t-12 block">{t.stripGeneral.redoTestsHint}</span>
         </span>
         <button type="button" className="btn btn-secondary btn-tight" onClick={() => go("add", stripId)}>
           <Icon name="refresh" size="sm" />
-          Recalibrate
+          {t.stripGeneral.recalibrate}
         </button>
       </div>
     </>

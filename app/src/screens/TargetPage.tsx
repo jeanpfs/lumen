@@ -3,6 +3,7 @@ import { Icon } from "../ui/Icon";
 import { PowerButton, Presumed, StateBlock } from "../ui/parts";
 import { Sheet } from "../ui/Sheet";
 import { rgbStr } from "../lib/color";
+import { useT } from "../i18n";
 import { presumedOf, useApp } from "../state/store";
 import { findTarget, targetStatus } from "../state/targets";
 import type { TargetRef } from "../state/types";
@@ -12,15 +13,16 @@ import { ModesTab } from "./Modes";
 import { GroupGeneral } from "./GroupGeneral";
 import { StripGeneral } from "./StripGeneral";
 
-const TABS: [Tab, string][] = [
-  ["general", "General"],
-  ["color", "Color"],
-  ["modes", "Modes"],
+const TABS: [Tab, "tabGeneral" | "tabColor" | "tabModes"][] = [
+  ["general", "tabGeneral"],
+  ["color", "tabColor"],
+  ["modes", "tabModes"],
 ];
 
 /** One group or one strip: fixed header, tabs General · Color · Modes. The target is whatever the route says. */
 export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: Tab; from?: string; go: Go }) {
   const { state, actions } = useApp();
+  const t = useT().targets;
   const [renaming, setRenaming] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [name, setName] = useState("");
@@ -37,18 +39,18 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
       go("home");
     }
   };
-  const backLabel = from && fromGroup ? `Back to ${fromGroup.name}` : "Home";
+  const backLabel = from && fromGroup ? t.target.backTo(fromGroup.name) : t.target.home;
 
   if (!state.loaded) return null;
   if (!found) {
     return (
       <StateBlock
         icon="strip"
-        title="Not found"
-        text={isGroup ? "This group no longer exists." : "This strip no longer exists."}
+        title={t.target.notFound}
+        text={isGroup ? t.target.groupGone : t.target.stripGone}
         actions={
           <button type="button" className="btn btn-secondary" onClick={() => go("home")}>
-            Back to Home
+            {t.target.backToHome}
           </button>
         }
       />
@@ -56,9 +58,8 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
   }
 
   const p = presumedOf(state, target);
-  const st = targetStatus(state, target);
+  const st = targetStatus(state, target, t.status);
   const unavailable = state.unavailable !== null;
-  const noun = isGroup ? "group" : "strip";
   const onRename = async (e: FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
@@ -91,8 +92,8 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
             <button
               type="button"
               className="icon-btn"
-              aria-label="Rename"
-              title={`Rename ${noun}`}
+              aria-label={t.target.rename}
+              title={isGroup ? t.target.renameGroup : t.target.renameStrip}
               onClick={() => {
                 setName(found.name);
                 setRenaming(true);
@@ -100,7 +101,7 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
             >
               <Icon name="edit" size="sm" />
             </button>
-            <button type="button" className="icon-btn icon-btn-danger" aria-label={isGroup ? "Delete group" : "Remove strip"} title={isGroup ? "Delete group" : "Remove strip"} onClick={() => setRemoving(true)}>
+            <button type="button" className="icon-btn icon-btn-danger" aria-label={isGroup ? t.target.deleteGroup : t.target.removeStrip} title={isGroup ? t.target.deleteGroup : t.target.removeStrip} onClick={() => setRemoving(true)}>
               <Icon name="trash" size="sm" />
             </button>
           </div>
@@ -108,7 +109,7 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
             {isGroup && (
               <>
                 <span className="tnum">
-                  {found.members.length} strip{found.members.length === 1 ? "" : "s"}
+                  {t.common.stripCount(found.members.length)}
                 </span>{" "}
                 ·{" "}
               </>
@@ -124,7 +125,7 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
         />
       </div>
 
-      <div className="tabs" role="tablist" aria-label={`Sections of ${found.name}`}>
+      <div className="tabs" role="tablist" aria-label={t.target.sectionsOf(found.name)}>
         {TABS.map(([id, label]) => (
           <button
             key={id}
@@ -136,7 +137,7 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
             aria-selected={tab === id}
             onClick={() => go(target.kind, target.id, { tab: id, from })}
           >
-            {label}
+            {t.target[label]}
           </button>
         ))}
       </div>
@@ -163,18 +164,18 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
       )}
 
       {renaming && (
-        <Sheet title={`Rename ${noun}`} onClose={() => setRenaming(false)}>
+        <Sheet title={isGroup ? t.target.renameGroup : t.target.renameStrip} onClose={() => setRenaming(false)}>
           <form className="sheet-form" onSubmit={(e) => void onRename(e)}>
             <label className="field-l">
-              <span className="strong">New name</span>
+              <span className="strong">{t.target.newName}</span>
               <input className="field" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
             </label>
             <div className="sheet-foot">
               <button type="button" className="btn btn-ghost" onClick={() => setRenaming(false)}>
-                Cancel
+                {t.common.cancel}
               </button>
               <button type="submit" className="btn btn-primary" disabled={!name.trim() || name.trim() === found.name}>
-                Save
+                {t.common.save}
               </button>
             </div>
           </form>
@@ -183,16 +184,16 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
 
       {removing && (
         <Sheet
-          title={isGroup ? "Delete group?" : `Remove ${found.name}?`}
-          sub={isGroup ? "The strips stay in the app; they just leave the group." : "It stops showing up on Home and in groups."}
+          title={isGroup ? t.target.deleteGroupQ : t.target.removeQ(found.name)}
+          sub={isGroup ? t.target.deleteGroupSub : t.target.removeStripSub}
           onClose={() => setRemoving(false)}
         >
           <div className="sheet-actions">
             <button type="button" className="btn btn-ghost" onClick={() => setRemoving(false)}>
-              Cancel
+              {t.common.cancel}
             </button>
             <button type="button" className="btn btn-primary" onClick={() => void onRemove()}>
-              {isGroup ? "Delete group" : "Remove strip"}
+              {isGroup ? t.target.deleteGroup : t.target.removeStrip}
             </button>
           </div>
         </Sheet>

@@ -1,120 +1,50 @@
 // The strip's built-in effects. `id` is the effect's mode number, grouped in tabs. The "Flow" range
-// (63-75) is intentionally left out.
+// (63-75) is intentionally left out. Names live in the i18n bundle, keyed by these ids.
 
 export interface Mode {
   id: number;
-  name: string;
 }
 
+export type CategoryId = "basic" | "open" | "trans" | "water" | "trail" | "run";
+
 export interface ModeCategory {
-  id: string;
-  name: string;
+  id: CategoryId;
   /** Which preview animation in the stylesheet (`.fx[data-a]`) stands for the category. */
   preview: string;
   modes: Mode[];
 }
 
-const m = (id: number, name: string): Mode => ({ id, name });
+const m = (id: number): Mode => ({ id });
 
 export const MODE_CATEGORIES: ModeCategory[] = [
   {
     id: "basic",
-    name: "Basic",
     preview: "fade7",
-    modes: [
-      m(1, "Auto cycle"),
-      m(2, "Symphony"),
-      m(3, "Color energy"),
-      m(4, "Color jump"),
-      m(7, "7-color strobe"),
-      m(10, "7-color gradient"),
-      m(26, "Color ripple"),
-      m(27, "Red-green-blue ripple"),
-      m(29, "Color sweep"),
-      m(30, "Red-green-blue sweep"),
-      m(31, "Yellow-cyan-purple sweep"),
-      m(32, "Color sweep open/close"),
-    ],
+    modes: [m(1), m(2), m(3), m(4), m(7), m(10), m(26), m(27), m(29), m(30), m(31), m(32)],
   },
   {
     id: "open",
-    name: "Open/Close",
     preview: "open",
-    modes: [
-      m(35, "7 colors"),
-      m(36, "Red-green-blue"),
-      m(37, "Yellow-cyan-purple"),
-      m(38, "Red"),
-      m(39, "Green"),
-      m(40, "Blue"),
-      m(41, "Yellow"),
-      m(42, "Cyan"),
-      m(43, "Purple"),
-      m(44, "White"),
-    ],
+    modes: [m(35), m(36), m(37), m(38), m(39), m(40), m(41), m(42), m(43), m(44)],
   },
   {
     id: "trans",
-    name: "Transition",
     preview: "fade7",
-    modes: [
-      m(45, "7-color breathing"),
-      m(46, "Blue-red-green breathing"),
-      m(47, "Violet-green-yellow breathing"),
-      m(48, "6-color breathing, red"),
-      m(49, "6-color breathing, green"),
-      m(50, "6-color breathing, blue"),
-      m(51, "6-color breathing, cyan"),
-      m(52, "6-color breathing, yellow"),
-      m(53, "6-color breathing, purple"),
-      m(54, "6-color breathing, white"),
-    ],
+    modes: [m(45), m(46), m(47), m(48), m(49), m(50), m(51), m(52), m(53), m(54)],
   },
   {
     id: "water",
-    name: "Flowing water",
     preview: "water",
-    modes: [
-      m(55, "7 colors"),
-      m(56, "Blue-green-red"),
-      m(57, "Purple-green-yellow"),
-      m(58, "Red-green"),
-      m(59, "Green-blue"),
-      m(60, "Yellow-blue"),
-      m(61, "Yellow-cyan"),
-      m(62, "Blue-purple"),
-    ],
+    modes: [m(55), m(56), m(57), m(58), m(59), m(60), m(61), m(62)],
   },
   {
     id: "trail",
-    name: "Trail",
     preview: "comet",
-    modes: [
-      m(76, "7 colors"),
-      m(77, "Red"),
-      m(78, "Green"),
-      m(79, "Blue"),
-      m(80, "Yellow"),
-      m(81, "Cyan"),
-      m(82, "Purple"),
-      m(83, "White"),
-    ],
+    modes: [m(76), m(77), m(78), m(79), m(80), m(81), m(82), m(83)],
   },
   {
     id: "run",
-    name: "Chase",
     preview: "race",
-    modes: [
-      m(84, "Red"),
-      m(85, "Green"),
-      m(86, "Blue"),
-      m(87, "Yellow"),
-      m(88, "Cyan"),
-      m(89, "Purple"),
-      m(90, "White"),
-      m(91, "7 colors"),
-      m(92, "Blue-green-red"),
-      m(93, "Purple-cyan-yellow"),
-    ],
+    modes: [m(84), m(85), m(86), m(87), m(88), m(89), m(90), m(91), m(92), m(93)],
   },
 ];

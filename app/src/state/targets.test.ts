@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { targets } from "../i18n/targets";
 import { findTarget, targetStatus } from "./targets";
 import { snapshot } from "../test/fakeBackend";
 import { reducer } from "./store";
 import type { State } from "./types";
+
+const S = targets.en.status;
 
 const empty = (): State => ({
   snapshot,
@@ -13,6 +16,8 @@ const empty = (): State => ({
   favourites: [],
   overrides: [],
   theme: "dark",
+  language: "auto",
+  systemLocale: null,
   onboarded: true,
   events: [],
   bluetooth: "on",
@@ -34,28 +39,28 @@ describe("targets", () => {
   it("findTarget fallback handles non-existent groups", () => {
     let s = empty();
     s = reducer(s, { type: "presumed", keys: ["group:nope"], patch: { on: true } });
-    expect(() => targetStatus(s, { kind: "group", id: "nope" })).not.toThrow();
-    expect(targetStatus(s, { kind: "group", id: "nope" }).k).toBe("on");
+    expect(() => targetStatus(s, { kind: "group", id: "nope" }, S)).not.toThrow();
+    expect(targetStatus(s, { kind: "group", id: "nope" }, S).k).toBe("on");
   });
 
   it("a group is unreachable when every member is", () => {
     let s = empty();
     s = reducer(s, { type: "presumed", keys: ["group:living-room"], patch: { on: true } });
     s = reducer(s, { type: "link", ids: ["a", "b"], link: "unreachable" });
-    expect(targetStatus(s, { kind: "group", id: "living-room" }).k).toBe("unreachable");
+    expect(targetStatus(s, { kind: "group", id: "living-room" }, S).k).toBe("unreachable");
   });
 
   it("a group is partial when some members are unreachable", () => {
     let s = empty();
     s = reducer(s, { type: "presumed", keys: ["group:living-room"], patch: { on: true } });
     s = reducer(s, { type: "link", ids: ["a"], link: "unreachable" });
-    expect(targetStatus(s, { kind: "group", id: "living-room" }).k).toBe("partial");
+    expect(targetStatus(s, { kind: "group", id: "living-room" }, S).k).toBe("partial");
   });
 
   it("a strip is unreachable when its link is", () => {
     let s = empty();
     s = reducer(s, { type: "presumed", keys: ["strip:c"], patch: { on: true } });
     s = reducer(s, { type: "link", ids: ["c"], link: "unreachable" });
-    expect(targetStatus(s, { kind: "strip", id: "c" }).k).toBe("unreachable");
+    expect(targetStatus(s, { kind: "strip", id: "c" }, S).k).toBe("unreachable");
   });
 });

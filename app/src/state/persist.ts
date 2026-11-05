@@ -1,3 +1,4 @@
+import { LANG_PREFS, type LangPref } from "../i18n/lang";
 import type { Favourite, Presumed, State, Theme } from "./types";
 
 const KEY = "lumen.state.v2";
@@ -7,6 +8,7 @@ export interface Persisted {
   favourites: Favourite[];
   overrides: string[];
   theme: Theme;
+  language: LangPref;
   onboarded: boolean;
 }
 
@@ -15,6 +17,7 @@ export const EMPTY: Persisted = {
   favourites: [],
   overrides: [],
   theme: "dark",
+  language: "auto",
   onboarded: false,
 };
 
@@ -46,6 +49,7 @@ export function loadPersisted(): Persisted {
         : [],
       overrides: Array.isArray(data.overrides) ? data.overrides.filter((x): x is string => typeof x === "string") : [],
       theme: data.theme === "light" ? "light" : "dark",
+      language: LANG_PREFS.find((l) => l === data.language) ?? "auto",
       onboarded: data.onboarded === true,
     };
   } catch {
@@ -60,6 +64,7 @@ export function savePersisted(state: Pick<State, keyof Persisted>): void {
       favourites: state.favourites,
       overrides: state.overrides,
       theme: state.theme,
+      language: state.language,
       onboarded: state.onboarded,
     };
     localStorage.setItem(KEY, JSON.stringify(out));

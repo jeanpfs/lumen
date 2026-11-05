@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { Icon } from "./Icon";
+import { useT } from "../i18n";
 
 /** Modal sheet (bottom sheet on phones, centred dialog on desktop). Closes on scrim click and Escape. */
 export function Sheet({
@@ -15,6 +16,7 @@ export function Sheet({
   menu?: boolean;
   children: ReactNode;
 }) {
+  const t = useT().shell;
   const titleRef = useRef<HTMLHeadingElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -40,7 +42,7 @@ export function Sheet({
             </h2>
             {sub && <p className="muted t-12">{sub}</p>}
           </div>
-          <button type="button" className="icon-btn" aria-label="Close" onClick={onClose}>
+          <button type="button" className="icon-btn" aria-label={t.close} onClick={onClose}>
             <Icon name="x" />
           </button>
         </div>

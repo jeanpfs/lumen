@@ -9,8 +9,9 @@ import App from "./App";
 
 const strip = { id: "a", name: "A", profile: "mrstar", calibration: { channel_order: "Rgb", min_brightness: 3, steps: 0, has_white: false } };
 
-function backend(strips: unknown[]) {
+function backend(strips: unknown[], locale: string | null = null) {
   invoke.mockImplementation(async (cmd: string) => {
+    if (cmd === "system_locale") return locale;
     if (cmd === "snapshot") return { strips, groups: [] };
     if (cmd === "scan") return [];
     if (cmd === "profiles") return [];
@@ -176,4 +177,27 @@ describe("first run (no strip yet)", () => {
   });
 
 
+});
+
+describe("language", () => {
+  it("follows the OS: a Portuguese phone gets the Brazilian UI", async () => {
+    localStorage.setItem("lumen.state.v2", JSON.stringify({ onboarded: true }));
+    backend([strip], "pt-PT");
+    render(<App />);
+
+    expect(await screen.findByRole("button", { name: "Adicionar fita" })).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe("pt-BR");
+  });
+
+  it("a manual choice overrides the OS, applies at once and is remembered", async () => {
+    localStorage.setItem("lumen.state.v2", JSON.stringify({ onboarded: true }));
+    backend([strip], "pt-BR");
+    render(<App />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Escolher idioma" }));
+    await userEvent.click(within(screen.getByRole("dialog", { name: "Idioma" })).getByRole("radio", { name: "English" }));
+
+    expect(await screen.findByRole("button", { name: "Add strip" })).toBeInTheDocument();
+    await waitFor(() => expect(JSON.parse(localStorage.getItem("lumen.state.v2")!).language).toBe("en"));
+  });
 });

@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Overview
-**Lumen** is a cross-platform (macOS, Windows, Android) controller for Bluetooth LE LED strips, an independent open-source alternative to the "MR Star" app. It is generic: strips are described by *profiles* (protocol families) and onboarded through a 9-step setup wizard. Targets are single strips or groups. The UI and all docs are in English.
+**Lumen** is a cross-platform (macOS, Windows, Android) controller for Bluetooth LE LED strips, an independent open-source alternative to the "MR Star" app. It is generic: strips are described by *profiles* (protocol families) and onboarded through a 9-step setup wizard. Targets are single strips or groups. The UI is in English and Brazilian Portuguese; docs are in English.
 
 Stack: Rust workspace (`core`, `probe`, `app/src-tauri`) + Tauri 2 shell + React 19 / TypeScript / Vite / Tailwind 4 frontend in `app/`.
 
@@ -19,6 +19,7 @@ React UI (app/src) → state/store.tsx (useReducer) → state/sender.ts (coalesc
 - `calibration.rs`: per-strip `ChannelOrder` (6 permutations), min brightness, `hsv_to_rgb`. `setup.rs`: wizard `Recognizer`/`Step`/channel-order deduction.
 - **Frontend contracts**: `app/src/api.ts` TS interfaces mirror Rust serde output; keep both in sync when changing a Snapshot/Command/WizardState shape. Tauri args are camelCase.
 - UI-only prefs persist to `localStorage` key `lumen.state.v2` (`state/persist.ts`, validates field-by-field, never throws). Routing is a custom hash router (`router.ts`): `#group/<id>`, `#strip/<id>`, add-wizard outside the Shell.
+- **i18n**: every UI text lives in a typed bundle `app/src/i18n/<area>.ts` (`en` + `pt-BR`, the latter type-checked against `en`; plurals/interpolation are functions) and is read with `useT()`. `AppProvider` resolves the language from the persisted `language` pref (`auto`/`en`/`pt-BR`, picked in `ui/LanguageSheet`) and the OS locale from the `system_locale` command (`sys-locale`; `navigator.language` does not track the OS in Tauri): any `pt*` → `pt-BR`, else `en`. Backend error strings stay English.
 - A Bluetooth gate (`ui/BluetoothGate`) and startup `warm_up` precede normal use.
 
 ## Key Directories
@@ -86,5 +87,5 @@ macOS note: after reinstalling the app, quit it with `pkill -f Lumen.app/Content
 ## Testing & QA
 - Only unit tests, all inline/colocated; no `tests/` integration dirs, no Tauri-side tests, no coverage tooling or thresholds.
 - **Rust**: `#[cfg(test)] mod tests` in `core/src/{service,pool,registry,families,protocol,setup,calibration}.rs` and `probe/src/parse.rs`. Async tests use `#[tokio::test]` with `FakeLink` (`core/src/transport/fake.rs`: `fail_connect/fail_write/fail_services`, recorded writes/connects, `set_discovered/set_services/set_powered`) and `tempfile` registries. Byte-level protocol encodings are asserted exactly; add a test for any new frame.
-- **Frontend**: Vitest + Testing Library + user-event. Setup `app/src/test/setup.ts` (jest-dom, ResizeObserver/scrollTo polyfills, localStorage cleared per test). Use `fakeBackend()` from `app/src/test/fakeBackend.ts` (vi.fn spies for every api method) with `AppProvider backend={…}`; `App.test.tsx` mocks `@tauri-apps/api/core` `invoke` by command name. UI labels are English; seed `localStorage` key `lumen.state.v2` and use `window.location.hash` for routing.
+- **Frontend**: Vitest + Testing Library + user-event. Setup `app/src/test/setup.ts` (jest-dom, ResizeObserver/scrollTo polyfills, localStorage cleared per test). Use `fakeBackend()` from `app/src/test/fakeBackend.ts` (vi.fn spies for every api method) with `AppProvider backend={…}`; `App.test.tsx` mocks `@tauri-apps/api/core` `invoke` by command name. Tests run in English (jsdom locale, `systemLocale` → null); seed `localStorage` key `lumen.state.v2` (e.g. `language: "pt-BR"`) and use `window.location.hash` for routing. `i18n/lang.test.ts` fails if a `pt-BR` text is missing or empty.
 - Gate before finishing: `cargo test --workspace` and, in `app/`, `npx tsc --noEmit && npx vitest run`. Real-hardware behavior can only be verified via `probe`/the app on a device.

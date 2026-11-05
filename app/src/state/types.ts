@@ -1,4 +1,5 @@
 import type { BluetoothState, Snapshot } from "../api";
+import type { LangPref } from "../i18n/lang";
 
 export type TargetKind = "group" | "strip";
 export interface TargetRef {
@@ -42,6 +43,10 @@ export interface State {
   /** Strip ids whose color is their own and does not follow the group. */
   overrides: string[];
   theme: Theme;
+  /** UI language: follow the OS (`auto`) or a fixed one. */
+  language: LangPref;
+  /** The OS's preferred language from the backend; null until it answers or when it cannot tell. */
+  systemLocale: string | null;
   onboarded: boolean;
   events: EventLine[];
   /** The radio's state; the app is blocked while it is `off`. */

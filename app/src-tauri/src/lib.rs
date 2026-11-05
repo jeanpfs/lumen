@@ -331,6 +331,12 @@ async fn profiles() -> Vec<ProfileInfo> {
     profile_catalogue()
 }
 
+/// The OS's preferred language as a BCP 47 tag (`pt-BR`, `en-US`), or `None` when it cannot be read.
+#[tauri::command]
+fn system_locale() -> Option<String> {
+    sys_locale::get_locale()
+}
+
 /// btleplug's Android backend needs the JVM and its Java classes registered once, from the thread that
 /// loads the library (the only one whose class loader sees the app's classes). Without this every
 /// Bluetooth call panics with "Droidplug has not been initialized".
@@ -386,6 +392,7 @@ pub fn run() {
             rename_strip,
             wizard_power_test,
             profiles,
+            system_locale,
             set_channel_order,
             wizard_recalibrate,
             wizard_start,
