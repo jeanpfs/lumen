@@ -30,11 +30,10 @@ const WZ_HELP: Record<number, string> = {
 };
 
 const SCAN_TIMEOUT_MS = 20000;
-// a step that sends to a connected strip; a reconnect fits too: find-scan 6 s + connect 8 s + discovery 8 s
-const STEP_TIMEOUT_MS = 25000;
-// steps that open the connection: the pool tries twice, and on Android each try may take find-scan 6 s + 0.5 s
-// pause + connect 12 s + discovery 8 s. Cutting this short would hide the backend's error behind "stalled".
-const CONNECT_TIMEOUT_MS = 55000;
+// Any step that talks to the strip may (re)connect first: the pool tries twice, and on Android each try may take
+// find-scan 6 s + 0.5 s pause + connect 12 s + discovery 8 s. Cutting this short would hide the backend's error
+// behind "stalled".
+const STEP_TIMEOUT_MS = 55000;
 const INTENSITY_HOLD_MS = 900;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -136,7 +135,7 @@ export function Wizard({ recalibrate, onClose }: WizardProps) {
   const prepareRecalibration = useCallback(async () => {
     if (!recalibrate) return;
     try {
-      const s = await withTimeout(backend.wizardRecalibrate(recalibrate), CONNECT_TIMEOUT_MS);
+      const s = await withTimeout(backend.wizardRecalibrate(recalibrate), STEP_TIMEOUT_MS);
       if (!mountedRef.current) return;
       applyState(s);
       setReady(true);
@@ -163,7 +162,7 @@ export function Wizard({ recalibrate, onClose }: WizardProps) {
     async (stripId: string, advertisedName: string | null) => {
       selectedStripRef.current = { id: stripId, name: advertisedName };
       try {
-        const result = await withTimeout(backend.wizardStart(stripId, advertisedName), CONNECT_TIMEOUT_MS);
+        const result = await withTimeout(backend.wizardStart(stripId, advertisedName), STEP_TIMEOUT_MS);
         if (!mountedRef.current) return;
         applyState(result);
         dispatch({ type: "go", step: 2 });

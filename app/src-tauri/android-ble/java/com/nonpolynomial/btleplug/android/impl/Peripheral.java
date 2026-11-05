@@ -157,7 +157,6 @@ class Peripheral {
                                 Peripheral.this.gatt = null;
                             }
                             Peripheral.this.connected = false;
-                            Peripheral.this.pendingConnect = null;
                             // Lumen: a RuntimeException keeps its message through JNI (NotConnectedException
                             // becomes a bare Error::NotConnected), so the app can show which status failed.
                             throw new RuntimeException("GATT status " + status + " after " + attemptElapsedMs
@@ -172,31 +171,26 @@ class Peripheral {
                 }
             };
 
-            try {
-                if (this.connected) {
-                    Peripheral.this.wakeCommand(future, null);
-                } else if (this.gatt == null) {
-                    try {
-                        this.setCommandCallback(callback);
-                        this.pendingConnect = future;
-                        // Lumen: LE only; TRANSPORT_AUTO lets the phone pick Classic for a dual-mode device.
-                        this.gatt = this.device.connectGatt(null, false, this.callback, BluetoothDevice.TRANSPORT_LE);
-                        if (this.gatt == null) {
-                            throw new RuntimeException("connectGatt returned null");
-                        }
-                    } catch (SecurityException ex) {
-                        throw new PermissionDeniedException(ex);
-                    }
-                } else {
+            if (this.connected) {
+                Peripheral.this.wakeCommand(future, null);
+            } else if (this.gatt == null) {
+                try {
                     this.setCommandCallback(callback);
                     this.pendingConnect = future;
-                    if (!this.gatt.connect()) {
-                        throw new RuntimeException("Unable to reconnect to device");
+                    // Lumen: LE only; TRANSPORT_AUTO lets the phone pick Classic for a dual-mode device.
+                    this.gatt = this.device.connectGatt(null, false, this.callback, BluetoothDevice.TRANSPORT_LE);
+                    if (this.gatt == null) {
+                        throw new RuntimeException("connectGatt returned null");
                     }
+                } catch (SecurityException ex) {
+                    throw new PermissionDeniedException(ex);
                 }
-            } catch (RuntimeException ex) {
-                this.pendingConnect = null;
-                throw ex;
+            } else {
+                this.setCommandCallback(callback);
+                this.pendingConnect = future;
+                if (!this.gatt.connect()) {
+                    throw new RuntimeException("Unable to reconnect to device");
+                }
             }
         });
     }
@@ -670,6 +664,11 @@ class Peripheral {
         try {
             callback.run();
         } catch (Throwable ex) {
+            // Lumen: a connect that fails by any throw is no longer pending; a later disconnect() must not
+            // "cancel" it (waking a finished future and advancing someone else's command).
+            if (this.pendingConnect == future) {
+                this.pendingConnect = null;
+            }
             future.wakeWithThrowable(ex);
             this.runNextCommand();
         }
