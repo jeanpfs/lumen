@@ -80,6 +80,19 @@ describe("Wizard", () => {
     await waitFor(() => expect(b.wizardStart).toHaveBeenCalledWith("FF:FF:11:77:27:B3", "GATT--DEMO: kit"));
   });
 
+  it("shows the backend's reason when the strip cannot be connected, so a user can report it", async () => {
+    const reason = "connect failed: Runtime Error: GATT status 133 after 412 ms (attempt 3)";
+    const { user } = setup({
+      wizardStart: vi.fn(async () => {
+        throw reason; // Tauri rejects with the ServiceError string
+      }),
+    });
+    await click(user, /MR-Star-1/);
+    await click(user, "Continue");
+    expect(await screen.findByText("Connection lost")).toBeInTheDocument();
+    expect(screen.getByText(reason)).toBeInTheDocument();
+  });
+
   it("blinks the strip with wizardProbe", async () => {
     const { b, user } = setup();
     await click(user, /MR-Star-1/);

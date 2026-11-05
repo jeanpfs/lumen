@@ -43,6 +43,10 @@ class Peripheral {
     static final int MAX_CONNECT_RETRIES = 2; // up to 3 total connect attempts
     static final long CONNECT_RETRY_DELAY_MS = 200;
     static final long CONNECT_RETRY_MAX_ELAPSED_MS = 10_000;
+    // Lumen: the default ATT MTU, used when the strip refuses or ignores the MTU exchange.
+    static final int DEFAULT_MTU = 23;
+    // Lumen: on Android 14+ a requestMtu may never be answered; past this the connect goes on at DEFAULT_MTU.
+    static final long MTU_TIMEOUT_MS = 3_000;
 
     // Library-owned scheduler for connect retries: deliberately not tied to any app's main
     // looper, since an app that blocks its main thread while awaiting connect() would otherwise
@@ -73,6 +77,9 @@ class Peripheral {
     private final LinkedList<WeakReference<QueueStream<BluetoothGattCharacteristic>>> notificationStreams = new LinkedList<>();
     private boolean executingCommand = false;
     private CommandCallback commandCallback;
+    // Lumen: the connect() whose connectGatt is still pending (or waiting for a retry), so disconnect() can
+    // cancel it instead of queueing behind it until Android's ~30 s direct-connect timeout.
+    private SimpleFuture<Void> pendingConnect;
 
     public Peripheral(Adapter adapter, String address) {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -134,6 +141,10 @@ class Peripheral {
                                 RETRY_EXECUTOR.schedule(() -> {
                                     Peripheral.this.dispatchToCommandCallback("connectRetry", () -> {
                                         synchronized (Peripheral.this) {
+                                            // Lumen: a disconnect() in the meantime cancelled this connect.
+                                            if (Peripheral.this.pendingConnect != future) {
+                                                return;
+                                            }
                                             Peripheral.this.attemptConnect(future, attempt + 1);
                                         }
                                     });
@@ -146,33 +157,46 @@ class Peripheral {
                                 Peripheral.this.gatt = null;
                             }
                             Peripheral.this.connected = false;
-                            throw new NotConnectedException();
+                            Peripheral.this.pendingConnect = null;
+                            // Lumen: a RuntimeException keeps its message through JNI (NotConnectedException
+                            // becomes a bare Error::NotConnected), so the app can show which status failed.
+                            throw new RuntimeException("GATT status " + status + " after " + attemptElapsedMs
+                                    + " ms (attempt " + (attempt + 1) + ")");
                         }
 
                         if (newState == BluetoothGatt.STATE_CONNECTED) {
+                            Peripheral.this.pendingConnect = null;
                             Peripheral.this.wakeCommand(future, null);
                         }
                     });
                 }
             };
 
-            if (this.connected) {
-                Peripheral.this.wakeCommand(future, null);
-            } else if (this.gatt == null) {
-                try {
-                    this.setCommandCallback(callback);
-                    this.gatt = this.device.connectGatt(null, false, this.callback);
-                    if (this.gatt == null) {
-                        throw new NotConnectedException();
+            try {
+                if (this.connected) {
+                    Peripheral.this.wakeCommand(future, null);
+                } else if (this.gatt == null) {
+                    try {
+                        this.setCommandCallback(callback);
+                        this.pendingConnect = future;
+                        // Lumen: LE only; TRANSPORT_AUTO lets the phone pick Classic for a dual-mode device.
+                        this.gatt = this.device.connectGatt(null, false, this.callback, BluetoothDevice.TRANSPORT_LE);
+                        if (this.gatt == null) {
+                            throw new RuntimeException("connectGatt returned null");
+                        }
+                    } catch (SecurityException ex) {
+                        throw new PermissionDeniedException(ex);
                     }
-                } catch (SecurityException ex) {
-                    throw new PermissionDeniedException(ex);
+                } else {
+                    this.setCommandCallback(callback);
+                    this.pendingConnect = future;
+                    if (!this.gatt.connect()) {
+                        throw new RuntimeException("Unable to reconnect to device");
+                    }
                 }
-            } else {
-                this.setCommandCallback(callback);
-                if (!this.gatt.connect()) {
-                    throw new RuntimeException("Unable to reconnect to device");
-                }
+            } catch (RuntimeException ex) {
+                this.pendingConnect = null;
+                throw ex;
             }
         });
     }
@@ -181,6 +205,28 @@ class Peripheral {
     public Future<Void> disconnect() {
         SimpleFuture<Void> future = new SimpleFuture<>();
         synchronized (this) {
+            // Lumen: a connect still in progress holds the command queue, so a queued disconnect would wait
+            // behind it (and then do nothing, since `connected` is false) while Android keeps trying for ~30 s.
+            // Cancel it here: close the pending gatt, fail the connect, and release the queue.
+            if (this.pendingConnect != null) {
+                SimpleFuture<Void> pending = this.pendingConnect;
+                this.pendingConnect = null;
+                if (this.gatt != null) {
+                    try {
+                        this.gatt.disconnect();
+                        this.gatt.close();
+                    } catch (SecurityException ex) {
+                        Log.w(TAG, "Cancelling a pending connect was refused", ex);
+                    }
+                    this.gatt = null;
+                }
+                this.connected = false;
+                pending.wakeWithThrowable(new RuntimeException("connect cancelled"));
+                this.runNextCommand();
+                future.wake(null);
+                return future;
+            }
+
             this.queueCommand(() -> {
                 this.asyncWithFuture(future, () -> {
                     if (!this.connected) {
@@ -251,20 +297,39 @@ class Peripheral {
                     if (!this.connected) {
                         throw new NotConnectedException();
                     }
-                    this.setCommandCallback(new CommandCallback(future) {
+                    // Lumen: btleplug's connect() always asks for 517 and used to fail the whole connect when the
+                    // strip refused. A refused, unsent or unanswered exchange now leaves the link at the default
+                    // MTU, which the strip's short frames fit in.
+                    CommandCallback callback = new CommandCallback(future) {
                         @Override
                         public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
                             Peripheral.this.asyncWithFuture(future, () -> {
                                 if (status != BluetoothGatt.GATT_SUCCESS) {
-                                    throw new RuntimeException("MTU negotiation failed, status: " + status);
+                                    Log.w(TAG, "MTU negotiation failed, status: " + status + "; using " + DEFAULT_MTU);
+                                    Peripheral.this.wakeCommand(future, DEFAULT_MTU);
+                                    return;
                                 }
                                 Peripheral.this.wakeCommand(future, mtu);
                             });
                         }
-                    });
+                    };
+                    this.setCommandCallback(callback);
                     if (!this.gatt.requestMtu(mtu)) {
-                        throw new RuntimeException("Unable to request MTU");
+                        Log.w(TAG, "Unable to request MTU; using " + DEFAULT_MTU);
+                        this.wakeCommand(future, DEFAULT_MTU);
+                        return;
                     }
+                    RETRY_EXECUTOR.schedule(() -> {
+                        Peripheral.this.dispatchToCommandCallback("mtuTimeout", () -> {
+                            synchronized (Peripheral.this) {
+                                if (Peripheral.this.commandCallback != callback) {
+                                    return;
+                                }
+                                Log.w(TAG, "No MTU answer after " + MTU_TIMEOUT_MS + " ms; using " + DEFAULT_MTU);
+                                Peripheral.this.wakeCommand(future, DEFAULT_MTU);
+                            }
+                        });
+                    }, MTU_TIMEOUT_MS, TimeUnit.MILLISECONDS);
                 });
             });
         }

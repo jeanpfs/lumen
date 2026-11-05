@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import WizardScan, { SCAN_SECS } from "./Scan";
+import WizardScan, { SCAN_SECS, signalBars } from "./Scan";
 
 describe("scan progress", () => {
   beforeEach(() => vi.useFakeTimers());
@@ -26,5 +26,17 @@ describe("scan progress", () => {
 
     await act(async () => finish());
     expect(now()).toBe(100);
+  });
+});
+
+describe("signal bars", () => {
+  it("lights 3-4 bars at the -55..-70 dBm a phone reads 1 m from a strip, and none below -90", () => {
+    expect(signalBars(-55)).toBe(4);
+    expect(signalBars(-60)).toBe(4);
+    expect(signalBars(-61)).toBe(3);
+    expect(signalBars(-70)).toBe(3);
+    expect(signalBars(-77)).toBe(2);
+    expect(signalBars(-90)).toBe(1);
+    expect(signalBars(-91)).toBe(0);
   });
 });

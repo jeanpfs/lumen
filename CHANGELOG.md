@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Android: connecting to a strip no longer fails when it refuses or ignores the MTU exchange; the
+  link falls back to the default MTU.
+- Android: connections use `TRANSPORT_LE`, wait 500 ms after a scan, and get 12 s instead of 8 s.
+- Android: a timed-out connect is now really cancelled instead of blocking the strip's command
+  queue until the system gives up (~30 s), which made every retry fail too.
+- Signal bars in the setup scan were calibrated so a strip next to the phone showed one bar; they
+  now light from -90/-80/-70/-60 dBm.
+
+### Changed
+
+- The setup wizard's "Connection lost" screen shows the backend's reason (for example the GATT
+  status), so it can be reported without a debugger.
+
 ## [0.1.1] - 2026-10-16
 
 ### Added
