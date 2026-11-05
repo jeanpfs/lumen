@@ -5,6 +5,7 @@ import type { WizardError as WizardErrorKind } from "../../lib/wizardMachine";
 export default function WizardError({
   error,
   step,
+  detail,
   onRetry,
   onRedo,
   onSkip,
@@ -12,6 +13,8 @@ export default function WizardError({
 }: {
   error: WizardErrorKind;
   step: number;
+  /** What the backend said, shown with "Connection lost" so a user without a debugger can report it. */
+  detail?: string | null;
   onRetry: () => void;
   /** Drops the answers that contradicted each other (steps 5 and 7). */
   onRedo: () => void;
@@ -65,6 +68,7 @@ export default function WizardError({
         icon="linkOff"
         title="Connection lost"
         text="Move the device closer to the strip. What you've already answered is saved."
+        detail={detail ?? undefined}
         actions={
           <div className="row-gap">
             <button className="btn btn-primary" onClick={onRetry}>

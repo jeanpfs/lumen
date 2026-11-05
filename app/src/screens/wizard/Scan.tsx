@@ -8,6 +8,12 @@ export const deviceChoice = (d: { id: string; name: string | null }) => JSON.str
 
 export const SCAN_SECS = 8;
 
+/** Bar thresholds in dBm. BLE reads about -55 to -70 dBm at 1 m, so a strip next to the phone shows 3-4 bars. */
+const BAR_DBM = [-90, -80, -70, -60];
+
+/** How many of the four signal bars `rssi` lights. */
+export const signalBars = (rssi: number): number => BAR_DBM.filter((t) => rssi >= t).length;
+
 /** 0-100 while `active`: elapsed share of `secs`, held at 99 until the scan really answers. */
 export function useScanProgress(active: boolean, secs: number): number {
   const [pct, setPct] = useState(0);
@@ -104,20 +110,16 @@ export default function WizardScan({
                   {d.rssi !== null && (
                     <>
                       <svg className="bars" viewBox="0 0 20 13" aria-hidden="true">
-                        {[0, 5, 10, 15].map((x, i) => {
-                          const strength = d.rssi! + 100;
-                          const threshold = [30, 50, 70, 90][i];
-                          return (
-                            <rect
-                              key={i}
-                              x={x}
-                              y={13 - (i + 1) * 3}
-                              width="3"
-                              height={(i + 1) * 3}
-                              className={strength >= threshold ? "on" : ""}
-                            />
-                          );
-                        })}
+                        {[0, 5, 10, 15].map((x, i) => (
+                          <rect
+                            key={i}
+                            x={x}
+                            y={13 - (i + 1) * 3}
+                            width="3"
+                            height={(i + 1) * 3}
+                            className={i < signalBars(d.rssi!) ? "on" : ""}
+                          />
+                        ))}
                       </svg>
                       <span className="mono muted">{d.rssi} dBm</span>
                     </>

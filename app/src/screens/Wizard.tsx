@@ -30,8 +30,10 @@ const WZ_HELP: Record<number, string> = {
 };
 
 const SCAN_TIMEOUT_MS = 20000;
-// a cold connect can take find-scan 4 s + connect 8 s + discovery 8 s; do not call that "stalled" while it is still working
-const STEP_TIMEOUT_MS = 25000;
+// Any step that talks to the strip may (re)connect first: the pool tries twice, and on Android each try may take
+// find-scan 6 s + 0.5 s pause + connect 12 s + discovery 8 s. Cutting this short would hide the backend's error
+// behind "stalled".
+const STEP_TIMEOUT_MS = 55000;
 const INTENSITY_HOLD_MS = 900;
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -102,6 +104,7 @@ export function Wizard({ recalibrate, onClose }: WizardProps) {
     };
   }, []);
 
+  const [errorDetail, setErrorDetail] = useState<string | null>(null);
   const handleError = useCallback((msg: unknown) => {
     if (!mountedRef.current) return;
     const text = typeof msg === "string" ? msg : msg instanceof Error ? msg.message : "";
@@ -110,6 +113,7 @@ export function Wizard({ recalibrate, onClose }: WizardProps) {
     } else if (text === "stalled") {
       dispatch({ type: "error", error: "stalled" });
     } else {
+      setErrorDetail(text || null);
       dispatch({ type: "error", error: "lost" });
       console.error("Wizard error:", msg);
     }
@@ -381,6 +385,7 @@ export function Wizard({ recalibrate, onClose }: WizardProps) {
             <WizardError
               error={m.error}
               step={m.step}
+              detail={errorDetail}
               onRetry={onRetry}
               onRedo={() => dispatch({ type: "redo" })}
               onSkip={() => dispatch({ type: "skip" })}

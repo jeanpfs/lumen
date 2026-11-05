@@ -13,11 +13,20 @@ use std::time::Duration;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
+/// Android's connect also covers the MTU exchange (up to 3 s, see the vendored `Peripheral.java`) and up to
+/// three quick connect attempts on GATT status 133, so it gets more time than the desktop stacks.
+#[cfg(not(target_os = "android"))]
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(8);
+#[cfg(target_os = "android")]
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(12);
 const DISCOVER_TIMEOUT: Duration = Duration::from_secs(8);
 const WRITE_TIMEOUT: Duration = Duration::from_secs(5);
 const FIND_SCAN: Duration = Duration::from_secs(6);
 const SCAN_POLL: Duration = Duration::from_millis(100);
+/// Pause between stopping a scan and connecting. Reported to avoid GATT status 133 on Android when connecting
+/// right after `stopScan` (android/connectivity-samples#18); the other stacks do not need it.
+#[cfg(target_os = "android")]
+const AFTER_SCAN: Duration = Duration::from_millis(500);
 
 pub struct BleLink {
     adapter: Adapter,
@@ -112,7 +121,10 @@ impl BleLink {
         self.adapter
             .stop_scan()
             .await
-            .map_err(|e| LinkError::Connect(e.to_string()))
+            .map_err(|e| LinkError::Connect(e.to_string()))?;
+        #[cfg(target_os = "android")]
+        tokio::time::sleep(AFTER_SCAN).await;
+        Ok(())
     }
 
     async fn all_known(&self, ids: &[StripId]) -> Result<bool, LinkError> {
@@ -189,12 +201,14 @@ impl Link for BleLink {
         let established = async {
             tokio::time::timeout(CONNECT_TIMEOUT, p.connect())
                 .await
-                .map_err(|_| LinkError::Connect("connect timed out".into()))?
+                .map_err(|_| {
+                    LinkError::Connect(format!("timed out after {} s", CONNECT_TIMEOUT.as_secs()))
+                })?
                 .map_err(|e| LinkError::Connect(e.to_string()))?;
             tokio::time::timeout(DISCOVER_TIMEOUT, p.discover_services())
                 .await
                 .map_err(|_| LinkError::Connect("service discovery timed out".into()))?
-                .map_err(|e| LinkError::Connect(e.to_string()))
+                .map_err(|e| LinkError::Connect(format!("service discovery: {e}")))
         }
         .await;
         if let Err(e) = established {

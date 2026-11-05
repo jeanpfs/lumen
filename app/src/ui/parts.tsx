@@ -93,11 +93,14 @@ export function StateBlock({
   icon,
   title,
   text,
+  detail,
   actions,
 }: {
   icon: IconName;
   title: string;
   text: string;
+  /** Technical detail under the text, for error reports. */
+  detail?: string;
   actions?: ReactNode;
 }) {
   return (
@@ -107,6 +110,7 @@ export function StateBlock({
       </span>
       <h2 className="t-20">{title}</h2>
       <p className="muted">{text}</p>
+      {detail && <p className="mono muted t-12">{detail}</p>}
       {actions && <div className="state-actions">{actions}</div>}
     </div>
   );
