@@ -2,8 +2,9 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import type { Discovered, Seen, WizardState } from "../api";
 import { Icon } from "../ui/Icon";
 import { LEVELS_PERCENT, intensityOutcome, toSeen } from "../lib/wizard";
-import { WZ_SKIP, WZ_STEPS, backLeavesWizard, canNext, initialModel, wizardReducer } from "../lib/wizardMachine";
+import { WZ_SKIP, backLeavesWizard, canNext, initialModel, wizardReducer } from "../lib/wizardMachine";
 import { useApp } from "../state/store";
+import { useT } from "../i18n";
 import type { Go } from "../router";
 import WizardScan, { SCAN_SECS } from "./wizard/Scan";
 import WizardIdentify from "./wizard/Identify";
@@ -16,18 +17,6 @@ import WizardIntensity from "./wizard/Intensity";
 import WizardError from "./wizard/Error";
 import WizardSummary from "./wizard/Summary";
 import { NewGroupSheet } from "./GroupSheets";
-
-const WZ_HELP: Record<number, string> = {
-  1: "The search takes about 8 seconds. If the strip doesn't appear, close the manufacturer's app: the strip accepts only one connection at a time.",
-  2: "With several strips in the same room, blinking is the safest way to tell them apart.",
-  3: "If the strip wasn't recognized, go back and pick another from the list. Close the manufacturer's app if it's stuck.",
-  4: "Try again. If nothing changes, close the manufacturer's app and retry.",
-  5: "Many strips swap the channel order. Answer the color you see on the strip; Lumen corrects it automatically.",
-  6: "RGBW strips have a separate white LED. RGB strips make white by mixing the three colors.",
-  7: "At low brightness, many strips turn off or stop changing. This test avoids a dead range in the controller.",
-  8: "Effects come later. For now you can skip this step.",
-  9: "The name appears on Home and in groups. A strip can join as many groups as you want.",
-};
 
 const SCAN_TIMEOUT_MS = 20000;
 // Any step that talks to the strip may (re)connect first: the pool tries twice, and on Android each try may take
@@ -54,6 +43,7 @@ export interface WizardProps {
 
 export function Wizard({ recalibrate, onClose }: WizardProps) {
   const { state, actions, backend } = useApp();
+  const t = useT().wizard;
   const [m, dispatch] = useReducer(wizardReducer, recalibrate || "", (rec) =>
     initialModel(
       !!rec,
@@ -333,21 +323,21 @@ export function Wizard({ recalibrate, onClose }: WizardProps) {
     }
   }, [m.step, m.probe, m.choice, backend, answerProbe, finishWizard, startWizard]);
 
-  const nextLbl = m.step === 9 ? (recalibrate ? "Save profile" : "Finish") : "Continue";
+  const nextLbl = m.step === 9 ? (recalibrate ? t.saveProfile : t.finish) : t.continue;
   const showNext = [1, 2, 3, 4, 5, 6, 7, 8, 9].includes(m.step) && !m.error && ready;
   const showStep = !m.error && ready;
 
   return (
     <div className="wz" role="dialog" aria-modal="true" aria-labelledby="wz-title" data-step={m.step}>
       <header className="wz-top">
-        <button className="icon-btn" onClick={() => void cancelWizard()} aria-label="Exit setup">
+        <button className="icon-btn" onClick={() => void cancelWizard()} aria-label={t.exitSetup}>
           <Icon name="x" />
         </button>
         <div className="wz-steps">
-          <span className="t-12 strong tnum">Step {m.step} of 9</span>
-          <span className="t-12 muted">{WZ_STEPS[m.step - 1]}</span>
+          <span className="t-12 strong tnum">{t.stepOf(m.step)}</span>
+          <span className="t-12 muted">{t.steps[m.step - 1]}</span>
           <div className="wz-bar" aria-hidden="true">
-            {WZ_STEPS.map((_, i) => (
+            {t.steps.map((_, i) => (
               <i
                 key={i}
                 className={i + 1 < m.step ? "done" : i + 1 === m.step ? "cur" : ""}
@@ -361,7 +351,7 @@ export function Wizard({ recalibrate, onClose }: WizardProps) {
           aria-expanded={m.help}
         >
           <Icon name="help" size="sm" />
-          <span className="hide-xs">I need help</span>
+          <span className="hide-xs">{t.needHelp}</span>
         </button>
       </header>
 
@@ -370,11 +360,11 @@ export function Wizard({ recalibrate, onClose }: WizardProps) {
           {m.help && (
             <div className="wz-help" role="note">
               <Icon name="help" size="sm" />
-              <p>{WZ_HELP[m.step]}</p>
+              <p>{t.help[m.step - 1]}</p>
               <button
                 className="icon-btn"
                 onClick={() => dispatch({ type: "help" })}
-                aria-label="Close help"
+                aria-label={t.closeHelp}
               >
                 <Icon name="x" size="sm" />
               </button>
@@ -393,12 +383,12 @@ export function Wizard({ recalibrate, onClose }: WizardProps) {
             />
           )}
 
-          {!m.error && !ready && <p className="muted">Preparing the strip…</p>}
+          {!m.error && !ready && <p className="muted">{t.preparing}</p>}
 
           {showStep && m.step === 1 && <WizardScan onScan={scanStrips} value={m.choice} onChoose={(v) => dispatch({ type: "choose", value: v })} />}
           {showStep && m.step === 2 && (
             <WizardIdentify
-              stripName={selectedStripRef.current?.name ?? selectedStripRef.current?.id ?? "Strip"}
+              stripName={selectedStripRef.current?.name ?? selectedStripRef.current?.id ?? t.stripFallback}
               onBlink={probeStrip}
               value={m.choice}
               onChoose={(v) => dispatch({ type: "choose", value: v })}
@@ -462,12 +452,12 @@ export function Wizard({ recalibrate, onClose }: WizardProps) {
       <footer className="wz-foot">
         <button className="btn btn-ghost" onClick={onBack}>
           <Icon name="chevL" size="sm" />
-          {m.step === 1 || backLeavesWizard(m) ? "Cancel" : "Back"}
+          {m.step === 1 || backLeavesWizard(m) ? t.cancel : t.back}
         </button>
         <div className="row-gap">
           {WZ_SKIP[m.step] && !m.error && (
             <button className="btn btn-ghost" onClick={() => dispatch({ type: "skip" })}>
-              Skip
+              {t.skip}
             </button>
           )}
           {showNext && (

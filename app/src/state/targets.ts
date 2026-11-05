@@ -1,5 +1,5 @@
 import type { Snapshot } from "../api";
-import { groupStatus, stripStatus, type Status } from "./status";
+import { groupStatus, stripStatus, type Status, type StatusNames } from "./status";
 import { presumedOf } from "./store";
 import type { Link, State, TargetRef } from "./types";
 
@@ -14,10 +14,10 @@ export function findTarget(snapshot: Snapshot, t: TargetRef): { name: string; me
 }
 
 /** Same status the cards use, for the page header. */
-export function targetStatus(state: State, t: TargetRef): Status {
+export function targetStatus(state: State, t: TargetRef, s: StatusNames): Status {
   const unavailable = state.unavailable !== null;
   const p = presumedOf(state, t);
-  if (t.kind === "strip") return stripStatus(p, state.link[t.id] ?? "unknown", unavailable);
+  if (t.kind === "strip") return stripStatus(p, state.link[t.id] ?? "unknown", unavailable, s);
   const members = findTarget(state.snapshot, t)?.members ?? [];
-  return groupStatus(p, members.map((m): Link => state.link[m] ?? "unknown"), unavailable);
+  return groupStatus(p, members.map((m): Link => state.link[m] ?? "unknown"), unavailable, s);
 }

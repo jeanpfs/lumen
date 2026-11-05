@@ -3,19 +3,6 @@ import type { IntensityPick } from "./wizard";
 import { deduceOrder, intensityOutcome, toSeen } from "./wizard";
 import type { ColourAnswer, OrderName } from "./wizard";
 
-/** Titles of the nine steps, in order. */
-export const WZ_STEPS = [
-  "Scan",
-  "Identify",
-  "Recognize the type",
-  "On/off",
-  "Colors",
-  "White and extras",
-  "Intensity",
-  "Effects",
-  "Name and summary",
-] as const;
-
 /** Steps the user may skip without answering. */
 export const WZ_SKIP: Readonly<Record<number, boolean>> = { 6: true, 7: true, 8: true };
 

@@ -2,17 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Icon } from "../ui/Icon";
 import { StateBlock } from "../ui/parts";
 import { Sheet } from "../ui/Sheet";
+import { useT } from "../i18n";
 import { profileName } from "../lib/profiles";
 import { useApp } from "../state/store";
-import { errorMessage, type Capabilities, type ProfileInfo } from "../api";
+import { errorMessage, type ProfileInfo } from "../api";
 
-const CAPS: [keyof Capabilities, string][] = [
-  ["color", "Color"],
-  ["brightness", "Brightness"],
-  ["white", "White"],
-  ["effects", "Effects"],
-  ["microphone", "Microphone"],
-];
+const CAPS = ["color", "brightness", "white", "effects", "microphone"] as const;
 
 /**
  * Loads the catalogue once, ahead of time: the modal must open with its content already there, because a list that
@@ -42,25 +37,26 @@ export function TypesSheet({
   onRetry: () => void;
   onClose: () => void;
 }) {
+  const t = useT().targets;
 
   return (
-    <Sheet title="Supported strip types" sub="Protocol families the wizard recognizes on its own" onClose={onClose}>
+    <Sheet title={t.types.title} sub={t.types.sub} onClose={onClose}>
       {error ? (
         <div className="card">
           <StateBlock
             icon="alert"
-            title="Couldn't load the list"
+            title={t.types.loadFailed}
             text={error}
             actions={
               <button type="button" className="btn btn-secondary" onClick={onRetry}>
-                Try again
+                {t.common.tryAgain}
               </button>
             }
           />
         </div>
       ) : profiles === null ? (
         <p className="muted" aria-live="polite">
-          Loading…
+          {t.common.loading}
         </p>
       ) : (
         <ul className="types card">
@@ -70,19 +66,19 @@ export function TypesSheet({
                 <Icon name="chip" size="sm" />
               </span>
               <div className="type-txt">
-                <span className="strong">{profileName(p.id)}</span>
-                <span className="muted t-12">{p.verified ? "Tested on a real strip" : "Not yet verified on a real strip"}</span>
+                <span className="strong">{profileName(p.id, t.profiles)}</span>
+                <span className="muted t-12">{p.verified ? t.types.verifiedTested : t.types.verifiedNot}</span>
               </div>
               <div className="chips">
                 {p.verified && (
                   <span className="chip">
                     <Icon name="check" size="sm" />
-                    Verified
+                    {t.types.verified}
                   </span>
                 )}
-                {CAPS.filter(([k]) => p.capabilities[k]).map(([k, label]) => (
+                {CAPS.filter((k) => p.capabilities[k]).map((k) => (
                   <span className="chip" key={k}>
-                    {label}
+                    {t.types.caps[k]}
                   </span>
                 ))}
               </div>
@@ -92,10 +88,7 @@ export function TypesSheet({
       )}
       <p className="note">
         <Icon name="info" size="sm" />
-        <span>
-          If your strip isn't listed here, the wizard still tries all of these types. If none works, close the
-          manufacturer's app, which holds the connection, and try again.
-        </span>
+        <span>{t.types.note}</span>
       </p>
     </Sheet>
   );

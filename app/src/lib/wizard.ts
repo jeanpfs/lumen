@@ -19,15 +19,6 @@ export function deduceOrder(seen: [Seen, Seen, Seen]): OrderName | null {
   return (name[0] + name.slice(1).toLowerCase()) as OrderName;
 }
 
-export const ORDER_MESSAGE: Record<OrderName, string> = {
-  Rgb: "RGB order: colors already arrive correct. Nothing to fix.",
-  Grb: "Green and red are swapped — fixed automatically.",
-  Bgr: "Blue and red are swapped — fixed automatically.",
-  Rbg: "Green and blue are swapped — fixed automatically.",
-  Brg: "All three channels are rotated (BRG) — fixed automatically.",
-  Gbr: "All three channels are rotated (GBR) — fixed automatically.",
-};
-
 export interface IntensityPick {
   /** Index in `LEVELS_PERCENT` of the dimmest level that still lights, or "none". */
   min: number | "none" | null;

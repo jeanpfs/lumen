@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useT } from "../../i18n";
 import { Icon } from "../../ui/Icon";
 import { StripPreview } from "../../ui/StripPreview";
 import { Choices } from "./Choices";
@@ -13,6 +14,7 @@ export default function WizardPower({
   value: string | null;
   onChoose: (value: string) => void;
 }) {
+  const t = useT().wizard;
   const [testing, setTesting] = useState(false);
   const [tested, setTested] = useState(false);
 
@@ -31,10 +33,10 @@ export default function WizardPower({
   return (
     <>
       <h1 className="t-28 wz-q" id="wz-title" tabIndex={-1}>
-        {testing ? "Turning the strip off and on…" : tested ? "Did the strip turn off and on?" : "Testing…"}
+        {testing ? t.powerTitleTesting : tested ? t.powerTitleAsk : t.testing}
       </h1>
       <p className="muted wz-sub">
-        {testing ? "Look at the strip." : "Lumen turned the strip off and on once."}
+        {testing ? t.powerSubTesting : t.powerSubDone}
       </p>
 
       {/* mirrors the real test: off during the pause, then on again */}
@@ -43,18 +45,18 @@ export default function WizardPower({
       {tested && !testing && (
         <>
           <Choices
-            label="Did the strip turn off and on?"
+            label={t.powerTitleAsk}
             columns={2}
             value={value}
             onChoose={onChoose}
             options={[
-              { value: "yes", label: "Yes, it turned off and on" },
-              { value: "no", label: "No" },
+              { value: "yes", label: t.yesTurned },
+              { value: "no", label: t.no },
             ]}
           />
           <button type="button" className="btn btn-ghost" onClick={() => void run()}>
             <Icon name="refresh" size="sm" />
-            Repeat
+            {t.repeat}
           </button>
         </>
       )}

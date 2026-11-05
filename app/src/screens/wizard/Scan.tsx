@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Discovered } from "../../api";
+import { useT } from "../../i18n";
 import { Icon } from "../../ui/Icon";
 
 /** How long the backend scans. It answers once, at the end, so progress is the elapsed share of this. */
@@ -38,6 +39,7 @@ export default function WizardScan({
   value: string | null;
   onChoose: (choice: string) => void;
 }) {
+  const t = useT().wizard;
   const [discovered, setDiscovered] = useState<Discovered[]>([]);
   const [loading, setLoading] = useState(false);
   const pct = Math.round(useScanProgress(loading, SCAN_SECS));
@@ -56,39 +58,39 @@ export default function WizardScan({
   return (
     <>
       <h1 className="t-28 wz-q" id="wz-title" tabIndex={-1}>
-        {loading ? "Looking for nearby strips…" : "Which of these is your strip?"}
+        {loading ? t.scanTitleLoading : t.scanTitleDone}
       </h1>
       <p className="muted wz-sub">
         {loading
-          ? `Scanning takes about ${SCAN_SECS} seconds.`
-          : "Tap your strip to continue. The one with the strongest signal is usually the closest."
+          ? t.scanSubLoading(SCAN_SECS)
+          : t.scanSubDone
         }
       </p>
 
       <div className="scan" data-od-id="wz-scan">
         <div className="scan-head">
           <span className="tnum" aria-live="polite">
-            {loading ? `Scanning · ${discovered.length} found` : `Scan complete · ${discovered.length} devices`}
+            {loading ? t.scanningFound(discovered.length) : t.scanComplete(discovered.length)}
           </span>
           {loading ? (
             <span className="muted tnum">{pct}%</span>
           ) : (
             <button className="btn btn-ghost btn-tight" onClick={handleScan}>
               <Icon name="refresh" size="sm" />
-              Scan again
+              {t.scanAgain}
             </button>
           )}
         </div>
 
-        <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Scan progress">
+        <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={t.scanProgress}>
           <i style={{ transform: `scaleX(${pct / 100})` }} />
         </div>
 
         {!loading && discovered.length === 0 && (
-          <p className="muted t-12">No strips found. Turn on the strip, move the device closer, and scan again.</p>
+          <p className="muted t-12">{t.noStripsFound}</p>
         )}
 
-        <ul className="devices" role="radiogroup" aria-label="Which of these is your strip?">
+        <ul className="devices" role="radiogroup" aria-label={t.scanTitleDone}>
           {discovered.map((d) => (
             <li key={d.id}>
               <button
@@ -104,7 +106,7 @@ export default function WizardScan({
                 </span>
                 <span className="device-txt">
                   <span className="mono strong">{d.name || `[${d.id}]`}</span>
-                  <span className="muted t-12">Advertised name</span>
+                  <span className="muted t-12">{t.advertisedName}</span>
                 </span>
                 <span className="sig">
                   {d.rssi !== null && (
@@ -121,7 +123,7 @@ export default function WizardScan({
                           />
                         ))}
                       </svg>
-                      <span className="mono muted">{d.rssi} dBm</span>
+                      <span className="mono muted">{t.dbm(d.rssi)}</span>
                     </>
                   )}
                 </span>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useT } from "../../i18n";
 import { Icon } from "../../ui/Icon";
 import { StripPreview } from "../../ui/StripPreview";
 import { intensityOutcome, type IntensityPick } from "../../lib/wizard";
@@ -20,6 +21,7 @@ export default function WizardIntensity({
   onDiffChange: (value: IntensityPick["diff"]) => void;
   pick: IntensityPick;
 }) {
+  const t = useT().wizard;
   const [testing, setTesting] = useState(false);
   const [tested, setTested] = useState(false);
   const [shown, setShown] = useState(0);
@@ -41,17 +43,15 @@ export default function WizardIntensity({
   return (
     <>
       <h1 className="t-28 wz-q" id="wz-title" tabIndex={-1}>
-        {testing ? "Watch the brightness drop" : "How far can you see a difference?"}
+        {testing ? t.intensityTitleTesting : t.intensityTitleAsk}
       </h1>
       <p className="muted wz-sub">
-        {testing
-          ? "The same color in 6 steps, from strongest to weakest."
-          : "Tap a step to see it on the strip again."}
+        {testing ? t.intensitySubTesting : t.intensitySubAsk}
       </p>
 
       <StripPreview colour="255 160 70" level={LEVELS[shown] / 100} />
 
-      <div className="levels" role="group" aria-label="Brightness steps">
+      <div className="levels" role="group" aria-label={t.brightnessSteps}>
         {LEVELS.map((l, i) => (
           <button
             key={i}
@@ -60,7 +60,7 @@ export default function WizardIntensity({
             aria-pressed={shown === i}
             disabled={testing}
             style={{ "--k": 0.08 + l / 108 } as React.CSSProperties}
-            aria-label={`Show ${l}% on the strip`}
+            aria-label={t.showPercent(l)}
             onClick={() => {
               setShown(i);
               void onShow(i);
@@ -76,10 +76,10 @@ export default function WizardIntensity({
         <>
           <button type="button" className="btn btn-ghost btn-tight" onClick={() => setTested(false)}>
             <Icon name="refresh" size="sm" />
-            Repeat sequence
+            {t.repeatSequence}
           </button>
           <fieldset className="qset">
-            <legend className="strong">What is the lowest level that still lights up?</legend>
+            <legend className="strong">{t.lowestLevelQ}</legend>
             <div className="chips">
               {LEVELS.map((l, i) => (
                 <button
@@ -96,20 +96,20 @@ export default function WizardIntensity({
                 aria-pressed={pick.min === "none"}
                 onClick={() => onMinChange("none")}
               >
-                None lit up
+                {t.noneLit}
               </button>
             </div>
           </fieldset>
 
           <fieldset className="qset">
-            <legend className="strong">From which level do you stop seeing a difference?</legend>
+            <legend className="strong">{t.stopSeeingQ}</legend>
             <div className="chips">
               <button
                 className="chip chip-btn"
                 aria-pressed={pick.diff === "all"}
                 onClick={() => onDiffChange("all")}
               >
-                I see a difference at every level
+                {t.differenceEveryLevel}
               </button>
               {LEVELS.slice(1).map((l, i) => (
                 <button
@@ -128,8 +128,8 @@ export default function WizardIntensity({
             <div className="result result-ok">
               <Icon name="check" />
               <div>
-                <p className="strong tnum">Noticeable steps: {result.steps} · useful minimum: {result.minPercent}%</p>
-                <p className="muted t-12">Brightness control will start at {result.minPercent}%, with no dead zone.</p>
+                <p className="strong tnum">{t.noticeable(result.steps, result.minPercent)}</p>
+                <p className="muted t-12">{t.brightnessStarts(result.minPercent)}</p>
               </div>
             </div>
           )}

@@ -1,29 +1,12 @@
 import { useEffect } from "react";
 import type { Capabilities, ProbeView } from "../../api";
+import { useT } from "../../i18n";
 import { profileName } from "../../lib/profiles";
 import { Icon } from "../../ui/Icon";
 import { StripPreview } from "../../ui/StripPreview";
 import { Choices } from "./Choices";
 
-const POWER_ANSWERS = [
-  { value: "yes", label: "Yes" },
-  { value: "no", label: "No" },
-];
-
-const COLOUR_ANSWERS = [
-  { value: "red", label: "Red", swatch: "var(--led-red)" },
-  { value: "green", label: "Green", swatch: "var(--led-green)" },
-  { value: "blue", label: "Blue", swatch: "var(--led-blue)" },
-  { value: "other", label: "Another color or nothing", swatch: "var(--led-off)" },
-];
-
-const CAPS: [keyof Capabilities, string][] = [
-  ["color", "Color"],
-  ["brightness", "Brightness"],
-  ["white", "White"],
-  ["effects", "Effects"],
-  ["microphone", "Microphone"],
-];
+const CAPS = ["color", "brightness", "white", "effects", "microphone"] as const;
 
 /** Step 3: the recognizer asks one question per candidate family (blink, then colour). */
 export default function WizardRecognition({
@@ -44,6 +27,8 @@ export default function WizardRecognition({
   value: string | null;
   onChoose: (value: string) => void;
 }) {
+  const all = useT();
+  const t = all.wizard;
   const probing = recognition === "pending" && probe !== null;
   const key = probing ? `${probe.index}:${probe.phase}` : null;
 
@@ -52,25 +37,36 @@ export default function WizardRecognition({
     if (key !== null) void onSend();
   }, [key, onSend]);
 
+  const powerAnswers = [
+    { value: "yes", label: t.yes },
+    { value: "no", label: t.no },
+  ];
+  const colourAnswers = [
+    { value: "red", label: t.red, swatch: "var(--led-red)" },
+    { value: "green", label: t.green, swatch: "var(--led-green)" },
+    { value: "blue", label: t.blue, swatch: "var(--led-blue)" },
+    { value: "other", label: t.otherColour, swatch: "var(--led-off)" },
+  ];
+
   return (
     <>
       <h1 className="t-28 wz-q" id="wz-title" tabIndex={-1}>
         {recognition === "pending"
           ? probe
-            ? "Finding out how to talk to your strip"
-            : "Testing…"
+            ? t.recFinding
+            : t.testing
           : recognition === "recognized"
             ? profileId
-              ? `Recognized: ${profileName(profileId)}`
-              : "Recognized"
-            : "Not recognized"}
+              ? t.recognizedProfile(profileName(profileId, all.targets.profiles))
+              : t.recognized
+            : t.notRecognized}
       </h1>
       <p className="muted wz-sub">
         {recognition === "pending"
-          ? `Each test sends a command to the strip and you tell us what you saw. This can take up to ${probe?.total ?? "several"} tests.`
+          ? t.recSubPending(probe?.total ?? null)
           : recognition === "recognized"
-            ? "The strip responded. Lumen now knows how to talk to it."
-            : "No known type responded. Go back and pick another strip, or check that the manufacturer's app is closed."}
+            ? t.recSubRecognized
+            : t.recSubExhausted}
       </p>
 
       {probing && (
@@ -78,64 +74,64 @@ export default function WizardRecognition({
           <div
             className="progress"
             role="progressbar"
-            aria-label="Test progress"
+            aria-label={t.testProgress}
             aria-valuemin={0}
             aria-valuemax={probe.total}
             aria-valuenow={probe.index}
-            aria-valuetext={`Test ${probe.index} of ${probe.total}`}
+            aria-valuetext={t.testOf(probe.index, probe.total)}
           >
             <i style={{ transform: `scaleX(${probe.index / probe.total})` }} />
           </div>
           <span className="muted t-12 tnum">
-            Test {probe.index} of {probe.total}
+            {t.testOf(probe.index, probe.total)}
           </span>
         </div>
       )}
 
       {probing && probe.phase === "blink" && (
         <Choices
-          label="Did the strip go off and back on again?"
+          label={t.didBlink}
           showLabel
           columns={2}
           value={value}
           onChoose={onChoose}
-          options={POWER_ANSWERS}
+          options={powerAnswers}
         />
       )}
       {probing && probe.phase === "blink" && (
         <button type="button" className="btn btn-ghost" onClick={() => void onSend()}>
           <Icon name="refresh" size="sm" />
-          Send again
+          {t.sendAgain}
         </button>
       )}
 
       {probing && probe.phase === "colour" && (
         <Choices
-          label="What color did the strip show?"
+          label={t.whatColourShown}
           showLabel
           value={value}
           onChoose={onChoose}
-          options={COLOUR_ANSWERS}
+          options={colourAnswers}
         />
       )}
       {probing && probe.phase === "colour" && (
         <button type="button" className="btn btn-ghost" onClick={() => void onSend()}>
           <Icon name="refresh" size="sm" />
-          Send again
+          {t.sendAgain}
         </button>
       )}
 
-      {recognition === "recognized" && <StripPreview reveal caption="Your strip" note="ready to receive colors" />}
+      {recognition === "recognized" && <StripPreview reveal caption={t.yourStrip} note={t.readyForColours} />}
 
       {recognition === "recognized" && (
         <div className="result result-ok">
           <Icon name="check" />
           <div>
-            <p className="strong">Detected capabilities</p>
+            <p className="strong">{t.detectedCaps}</p>
             <div className="chips">
-              {CAPS.filter(([k]) => capabilities?.[k]).map(([k, label]) => (
+              {CAPS.filter((k) => capabilities?.[k]).map((k) => (
                 <span key={k} className="chip">
-                  {label}
+                  {t.caps[k]}
                 </span>
               ))}
             </div>
@@ -147,11 +143,8 @@ export default function WizardRecognition({
         <div className="result result-warn">
           <Icon name="alert" />
           <div>
-            <p className="strong">Could not recognize this strip</p>
-            <p className="muted t-12">
-              Go back and pick another strip from the list. If the strip does not respond, close the manufacturer's app, which holds the
-              connection, and try again. The list of supported types is at the bottom of Home, under Supported strip types.
-            </p>
+            <p className="strong">{t.couldNotRecognize}</p>
+            <p className="muted t-12">{t.couldNotRecognizeHelp}</p>
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Icon } from "../ui/Icon";
 import { LinkBadge, RetryButton, StateBlock, Switch, colourVar } from "../ui/parts";
 import { rgbStr } from "../lib/color";
+import { useT } from "../i18n";
 import { presumedOf, useApp } from "../state/store";
 import type { Go } from "../router";
 import { AddToGroupSheet } from "./GroupSheets";
@@ -9,6 +10,7 @@ import { AddToGroupSheet } from "./GroupSheets";
 export function GroupGeneral({ groupId, go }: { groupId: string; go: Go }) {
   // All hooks live here, before any early return
   const { state, actions } = useApp();
+  const t = useT().targets;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [addOpen, setAddOpen] = useState(false);
 
@@ -58,31 +60,31 @@ export function GroupGeneral({ groupId, go }: { groupId: string; go: Go }) {
       <p className="note">
         <Icon name="info" size="sm" />
         <span>
-          Groups have no strip limit. Up to 6 stay connected live; the others receive commands in turn.
+          {t.groupGeneral.note}
         </span>
       </p>
 
       <div className="toolbar">
         <label className="check">
           <input type="checkbox" checked={allSelected} onChange={selectAll} />
-          <span>All</span>
+          <span>{t.groupGeneral.all}</span>
         </label>
         <span className={selectedIds.length > 0 ? "muted tnum t-12" : "sr-only"} aria-live="polite">
-          {selectedIds.length} selected
+          {t.groupGeneral.selected(selectedIds.length)}
         </span>
         {selectedIds.length > 0 ? (
           <div className="toolbar-actions">
             <button className="btn btn-secondary btn-tight" onClick={() => batch("on")}>
-              On
+              {t.common.on}
             </button>
             <button className="btn btn-secondary btn-tight" onClick={() => batch("off")}>
-              Off
+              {t.common.off}
             </button>
             <button className="btn btn-secondary btn-tight" onClick={() => batch("reset")}>
-              Follow group
+              {t.common.followGroup}
             </button>
             <button className="btn btn-danger btn-tight" onClick={() => batch("remove")}>
-              Remove
+              {t.common.remove}
             </button>
           </div>
         ) : (
@@ -90,12 +92,12 @@ export function GroupGeneral({ groupId, go }: { groupId: string; go: Go }) {
         )}
         <button type="button" className="btn btn-ghost btn-tight" onClick={() => setAddOpen(true)}>
           <Icon name="plus" size="sm" />
-          Add strips
+          {t.common.addStrips}
         </button>
       </div>
 
       {members.length > 0 ? (
-        <ol className="members card" aria-label="Strips in group, in order">
+        <ol className="members card" aria-label={t.groupGeneral.listLabel}>
           {members.map((s, i) => {
             const sp = presumedOf(state, { kind: "strip", id: s.id });
             const sl = state.link[s.id] ?? "unknown";
@@ -112,7 +114,7 @@ export function GroupGeneral({ groupId, go }: { groupId: string; go: Go }) {
                       className="cb"
                       checked={selected.has(s.id)}
                       onChange={() => toggleSelect(s.id)}
-                      aria-label={`Select ${s.name}`}
+                      aria-label={t.groupGeneral.select(s.name)}
                     />
                   </label>
                   <button
@@ -120,8 +122,8 @@ export function GroupGeneral({ groupId, go }: { groupId: string; go: Go }) {
                     className={`swatch-btn ${isOwn ? "is-own" : ""}`}
                     style={colourVar(rgbStr(sp.h, sp.s))}
                     onClick={() => go("strip", s.id, { tab: "color", from: groupId })}
-                    aria-label={`Color of ${s.name}: ${isOwn ? "own color" : "follows the group"}. Open`}
-                    title="This strip's color"
+                    aria-label={t.groupGeneral.colorOf(s.name, isOwn)}
+                    title={t.groupGeneral.stripColor}
                   />
                   <div className="mrow-txt">
                     <button
@@ -133,11 +135,11 @@ export function GroupGeneral({ groupId, go }: { groupId: string; go: Go }) {
                     </button>
                     <span className="mrow-meta">
                       <LinkBadge link={sl} />
-                      {isOwn && <span className="chip">Own color</span>}
+                      {isOwn && <span className="chip">{t.common.ownColor}</span>}
                       {inOtherGroups.map((g) => (
                         <span key={g.id} className="chip chip-group">
                           <Icon name="scenes" size="xs" />
-                          also in {g.name}
+                          {t.groupGeneral.alsoIn(g.name)}
                         </span>
                       ))}
                     </span>
@@ -147,20 +149,20 @@ export function GroupGeneral({ groupId, go }: { groupId: string; go: Go }) {
                       <button
                         type="button"
                         className="grip"
-                        aria-label={`Move ${s.name} up`}
+                        aria-label={t.groupGeneral.moveUpOf(s.name)}
                         onClick={() => void reorder(s.id, -1)}
                         disabled={i === 0}
-                        title="Move up"
+                        title={t.groupGeneral.moveUp}
                       >
                         <Icon name="chevU" size="sm" />
                       </button>
                       <button
                         type="button"
                         className="grip"
-                        aria-label={`Move ${s.name} down`}
+                        aria-label={t.groupGeneral.moveDownOf(s.name)}
                         onClick={() => void reorder(s.id, 1)}
                         disabled={i === members.length - 1}
-                        title="Move down"
+                        title={t.groupGeneral.moveDown}
                       >
                         <Icon name="chevD" size="sm" />
                       </button>
@@ -168,14 +170,14 @@ export function GroupGeneral({ groupId, go }: { groupId: string; go: Go }) {
                     {bad ? <RetryButton link={sl} onRetry={() => void actions.retry(s.id)} /> : null}
                     <Switch
                       on={sp.on && sl !== "unreachable"}
-                      label={`Turn on or off ${s.name}`}
+                      label={t.common.turnOnOff(s.name)}
                       disabled={sl === "unreachable" || unavailable}
                       onToggle={() => void actions.setPower({ kind: "strip", id: s.id }, !sp.on)}
                     />
                     <button
                       type="button"
                       className="icon-btn"
-                      aria-label={`Remove ${s.name} from group`}
+                      aria-label={t.groupGeneral.removeFromGroup(s.name)}
                       onClick={() => void actions.removeFromGroup(groupId, [s.id]).then(() => setSelected(new Set()))}
                     >
                       <Icon name="x" />
@@ -190,12 +192,12 @@ export function GroupGeneral({ groupId, go }: { groupId: string; go: Go }) {
         <div className="card">
           <StateBlock
             icon="strip"
-            title="Empty group"
-            text="Add strips to control this room."
+            title={t.groupGeneral.emptyTitle}
+            text={t.groupGeneral.emptyText}
             actions={
               <button type="button" className="btn btn-secondary" onClick={() => setAddOpen(true)}>
                 <Icon name="plus" size="sm" />
-                Add strips
+                {t.common.addStrips}
               </button>
             }
           />

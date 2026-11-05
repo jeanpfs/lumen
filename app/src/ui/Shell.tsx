@@ -5,10 +5,12 @@ import { rgbStr } from "../lib/color";
 import { presumedOf, useApp } from "../state/store";
 import type { TargetRef } from "../state/types";
 import type { Route } from "../router";
+import { useT } from "../i18n";
 
 /** The frame around every page: no menu, each page carries its own way back. */
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
   const { state } = useApp();
+  const t = useT().shell;
   const unavailable = state.unavailable !== null;
 
   // Compute the page target from the current route for the tint effect
@@ -39,7 +41,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
               <div className="banner" role="status">
                 <Icon name="btOff" size="sm" />
                 <span>
-                  <strong>Bluetooth unavailable.</strong> The strips are not receiving commands. Check the Bluetooth permission.
+                  <strong>{t.btUnavailableLead}</strong>{t.btUnavailableText}
                 </span>
               </div>
             </div>

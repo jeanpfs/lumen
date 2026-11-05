@@ -2,6 +2,7 @@ import { useMemo, type ChangeEvent } from "react";
 import { Icon } from "../ui/Icon";
 import { MODE_CATEGORIES } from "../lib/modes";
 import { useLocalSetting } from "../lib/localSettings";
+import { useT } from "../i18n";
 import { useApp, membersOf, presumedOf } from "../state/store";
 import { targetKey, type TargetRef } from "../state/types";
 
@@ -12,6 +13,7 @@ const PREVIEW_COLOUR = "255 140 60";
 
 export function ModesTab({ target }: { target: TargetRef }) {
   const { state, actions } = useApp();
+  const t = useT().targets;
   const count = target.kind === "group" ? membersOf(state.snapshot, target).length : 1;
 
   const [catId, setCatId] = useLocalSetting<string>("mode.cat", MODE_CATEGORIES[0].id);
@@ -52,7 +54,7 @@ export function ModesTab({ target }: { target: TargetRef }) {
 
   return (
     <>
-      <div className="tabs" role="tablist" aria-label="Effect categories">
+      <div className="tabs" role="tablist" aria-label={t.modes.categoriesLabel}>
         {MODE_CATEGORIES.map((c) => (
           <button
             key={c.id}
@@ -61,13 +63,13 @@ export function ModesTab({ target }: { target: TargetRef }) {
             aria-selected={c.id === cat.id}
             onClick={() => setCatId(c.id)}
           >
-            {c.name}
+            {t.modes.categoryNames[c.id]}
           </button>
         ))}
       </div>
 
       <div className="modes-grid">
-        <ul className="fx-list" role="radiogroup" aria-label={cat.name}>
+        <ul className="fx-list" role="radiogroup" aria-label={t.modes.categoryNames[cat.id]}>
           {cat.modes.map((mode) => (
             <li key={mode.id}>
               <button
@@ -86,7 +88,7 @@ export function ModesTab({ target }: { target: TargetRef }) {
                   <b></b>
                 </span>
                 <span className="fx-txt">
-                  <span className="strong">{mode.name}</span>
+                  <span className="strong">{t.modes.modeNames[mode.id]}</span>
                 </span>
                 <span className="radio" aria-hidden="true"></span>
               </button>
@@ -96,15 +98,15 @@ export function ModesTab({ target }: { target: TargetRef }) {
 
         <section className="card card-pad fx-panel">
           <div className="ctl-head">
-            <h2 className="t-20">{playingMode ? playingMode.name : "No effect"}</h2>
+            <h2 className="t-20">{playingMode ? t.modes.modeNames[playingMode.id] : t.modes.noEffect}</h2>
             {approx && (
               <span className="tip-wrap">
                 <button className="badge badge-warn" aria-describedby="tip-approx">
                   <Icon name="approx" size="sm" />
-                  approximate effect
+                  {t.modes.approximate}
                 </button>
                 <span role="tooltip" id="tip-approx" className="tooltip">
-                  {count} strips, {MAX_LIVE} live connections. Strips in the queue run the effect without exact sync.
+                  {t.modes.approximateTip(count, MAX_LIVE)}
                 </span>
               </span>
             )}
@@ -112,7 +114,7 @@ export function ModesTab({ target }: { target: TargetRef }) {
           <div className="ctl">
             <div className="ctl-head">
               <label htmlFor="rng-spd" className="strong">
-                Speed
+                {t.modes.speed}
               </label>
               <output className="tnum" id="out-spd">
                 {speed}
@@ -130,15 +132,15 @@ export function ModesTab({ target }: { target: TargetRef }) {
               onPointerUp={() => void actions.flush()}
             />
             <div className="ctl-foot muted t-12">
-              <span>Slow</span>
-              <span>Default 50</span>
-              <span>Fast</span>
+              <span>{t.modes.slow}</span>
+              <span>{t.modes.defaultSpeed}</span>
+              <span>{t.modes.fast}</span>
             </div>
           </div>
           <div className="ctl">
             <div className="ctl-head">
               <label htmlFor="rng-mb" className="strong">
-                Brightness
+                {t.common.brightness}
               </label>
               <output className="tnum" id="out-mb">
                 {brightness}%
@@ -159,7 +161,7 @@ export function ModesTab({ target }: { target: TargetRef }) {
           <div className="ctl">
             <div className="ctl-head">
               <span className="strong" id="lbl-dir">
-                Reverse direction
+                {t.modes.reverse}
               </span>
               <button
                 type="button"
@@ -174,7 +176,7 @@ export function ModesTab({ target }: { target: TargetRef }) {
             </div>
           </div>
           <button className="btn" onClick={stop} disabled={playing === null}>
-            Stop effect
+            {t.modes.stop}
           </button>
         </section>
       </div>

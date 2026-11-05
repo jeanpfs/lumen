@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import { api as realApi, errorMessage, type Command, type Report, type Target } from "../api";
+import { LangContext, MESSAGES, type Messages } from "../i18n";
+import { resolveLang, type LangPref } from "../i18n/lang";
 import { protoB, protoS } from "../lib/color";
 import { loadPersisted, savePersisted } from "./persist";
 import { Sender } from "./sender";
@@ -37,6 +39,8 @@ type Action =
   | { type: "favourite"; favourite: Favourite }
   | { type: "override"; id: string; on: boolean }
   | { type: "theme"; theme: Theme }
+  | { type: "language"; language: LangPref }
+  | { type: "systemLocale"; locale: string | null }
   | { type: "onboarded" }
   | { type: "event"; line: EventLine }
   | { type: "bluetooth"; value: BluetoothState }
@@ -90,6 +94,10 @@ export function reducer(state: State, a: Action): State {
     }
     case "theme":
       return { ...state, theme: a.theme };
+    case "language":
+      return { ...state, language: a.language };
+    case "systemLocale":
+      return { ...state, systemLocale: a.locale };
     case "onboarded":
       return { ...state, onboarded: true };
     case "bluetooth":
@@ -130,6 +138,7 @@ export interface Actions {
   saveFavourite(h: number, s: number): void;
   notify(text: string): void;
   setTheme(theme: Theme): void;
+  setLanguage(language: LangPref): void;
   finishOnboarding(): void;
   /** Gives one strip its own color inside its groups. */
   setStripOwnColour(stripId: string, h: number, s: number): void;
@@ -173,6 +182,8 @@ function initialState(): State {
     favourites: p.favourites,
     overrides: p.overrides,
     theme: p.theme,
+    language: p.language,
+    systemLocale: null,
     onboarded: p.onboarded,
     events: [],
     bluetooth: "unknown",
@@ -209,14 +220,33 @@ export function AppProvider({
   const stateRef = useRef(state);
   stateRef.current = state;
   const toastId = useRef(0);
+  const lang = resolveLang(state.language, state.systemLocale);
+  /** Texts for messages the store writes itself (toasts, event log), read inside callbacks. */
+  const msgRef = useRef<Messages>(MESSAGES[lang]);
+  msgRef.current = MESSAGES[lang];
 
   useEffect(() => {
     savePersisted(state);
-  }, [state.presumed, state.favourites, state.overrides, state.theme, state.onboarded]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [state.presumed, state.favourites, state.overrides, state.theme, state.language, state.onboarded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     document.documentElement.dataset.theme = state.theme;
   }, [state.theme]);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
+  useEffect(() => {
+    let live = true;
+    backend.systemLocale().then(
+      (locale) => live && dispatch({ type: "systemLocale", locale }),
+      () => undefined, // unreadable: the WebView's guess stays
+    );
+    return () => {
+      live = false;
+    };
+  }, [backend]);
 
   const notify = useCallback((text: string) => dispatch({ type: "toast", id: ++toastId.current, text }), []);
   const event = useCallback((text: string) => dispatch({ type: "event", line: { at: Date.now(), text } }), []);
@@ -251,13 +281,13 @@ export function AppProvider({
         const report = await backend.apply(targets, command);
         dispatch({ type: "link", ids: report.ok, link: "live" });
         dispatch({ type: "link", ids: report.unreachable, link: "unreachable" });
-        if (report.unreachable.length > 0) event(`Unreachable: ${report.unreachable.length}`);
+        if (report.unreachable.length > 0) event(msgRef.current.shell.unreachableEvent(report.unreachable.length));
         if (report.unsupported.length > 0 && ["effect", "speed", "direction"].includes(command.type)) {
-          notify(`Effects are not available on ${report.unsupported.length} strip(s) of this target`);
+          notify(msgRef.current.shell.effectsUnavailable(report.unsupported.length));
         }
         return report;
       } catch (e) {
-        fail(e, "Send");
+        fail(e, msgRef.current.shell.opSend);
         return null;
       }
     },
@@ -330,7 +360,7 @@ export function AppProvider({
         dispatch({ type: "snapshot", snapshot: await backend.snapshot() });
       } catch (e) {
         dispatch({ type: "loaded" });
-        fail(e, "Load strips");
+        fail(e, msgRef.current.shell.opLoadStrips);
       }
     };
     return {
@@ -380,6 +410,7 @@ export function AppProvider({
       saveFavourite: (h, s) => dispatch({ type: "favourite", favourite: { h, s } }),
       notify,
       setTheme: (theme) => dispatch({ type: "theme", theme }),
+      setLanguage: (language) => dispatch({ type: "language", language }),
       finishOnboarding: () => dispatch({ type: "onboarded" }),
       setStripOwnColour(stripId, h, s) {
         endEffect({ kind: "strip", id: stripId });
@@ -403,7 +434,7 @@ export function AppProvider({
       async createGroup(name, stripIds) {
         const id = `${slug(name)}-${Date.now().toString(36)}`;
         let ok = false;
-        await run("Create group", async () => {
+        await run(msgRef.current.shell.opCreateGroup, async () => {
           await backend.createGroup(id, name);
           for (const s of stripIds) await backend.addToGroup(id, s);
           ok = true;
@@ -411,24 +442,24 @@ export function AppProvider({
         return ok ? id : null;
       },
       addToGroup: (g, ids) =>
-        runVoid("Add to group", async () => {
+        runVoid(msgRef.current.shell.opAddToGroup, async () => {
           for (const s of ids) await backend.addToGroup(g, s);
         }, refresh),
       removeFromGroup: (g, ids) =>
-        runVoid("Remove from group", async () => {
+        runVoid(msgRef.current.shell.opRemoveFromGroup, async () => {
           for (const s of ids) await backend.removeFromGroup(g, s);
         }, refresh),
-      reorderGroup: (g, order) => runVoid("Reorder", () => backend.reorderGroup(g, order), refresh),
-      renameGroup: (g, name) => runVoid("Rename group", () => backend.renameGroup(g, name), refresh),
-      deleteGroup: (g) => run("Delete group", () => backend.deleteGroup(g), refresh),
-      renameStrip: (s, name) => runVoid("Rename strip", () => backend.renameStrip(s, name), refresh),
-      removeStrip: (s) => run("Remove strip", () => backend.removeStrip(s), refresh),
+      reorderGroup: (g, order) => runVoid(msgRef.current.shell.opReorder, () => backend.reorderGroup(g, order), refresh),
+      renameGroup: (g, name) => runVoid(msgRef.current.shell.opRenameGroup, () => backend.renameGroup(g, name), refresh),
+      deleteGroup: (g) => run(msgRef.current.shell.opDeleteGroup, () => backend.deleteGroup(g), refresh),
+      renameStrip: (s, name) => runVoid(msgRef.current.shell.opRenameStrip, () => backend.renameStrip(s, name), refresh),
+      removeStrip: (s) => run(msgRef.current.shell.opRemoveStrip, () => backend.removeStrip(s), refresh),
       enableBluetooth() {
         const native = window.LumenNative;
         if (native) native.enableBluetooth();
         else void backend.openBluetoothSettings().catch(() => undefined);
       },
-      setChannelOrder: (s, order) => runVoid("Color order", () => backend.setChannelOrder(s, order), refresh),
+      setChannelOrder: (s, order) => runVoid(msgRef.current.shell.opColorOrder, () => backend.setChannelOrder(s, order), refresh),
     };
   }, [backend, endEffect, fail, notify, patch, run, runVoid, send, sender]);
 
@@ -501,7 +532,11 @@ export function AppProvider({
     };
   }, [actions, returnRetryMs]);
 
-  return <AppCtx.Provider value={{ state, actions, backend }}>{children}</AppCtx.Provider>;
+  return (
+    <AppCtx.Provider value={{ state, actions, backend }}>
+      <LangContext.Provider value={lang}>{children}</LangContext.Provider>
+    </AppCtx.Provider>
+  );
 }
 
 export const presumedOf = (state: State, t: TargetRef): Presumed =>

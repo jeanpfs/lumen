@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useT } from "../../i18n";
 import { Icon } from "../../ui/Icon";
 import { StripPreview } from "../../ui/StripPreview";
 import { Choices } from "./Choices";
@@ -14,6 +15,7 @@ export default function WizardIdentify({
   value: string | null;
   onChoose: (value: string) => void;
 }) {
+  const t = useT().wizard;
   const [blinking, setBlinking] = useState(false);
   const [blinked, setBlinked] = useState(false);
 
@@ -27,15 +29,15 @@ export default function WizardIdentify({
   return (
     <>
       <h1 className="t-28 wz-q" id="wz-title" tabIndex={-1}>
-        Let's blink <span className="mono">{stripName}</span>
+        {t.blinkPrefix}<span className="mono">{stripName}</span>
       </h1>
-      <p className="muted wz-sub">Look at your strips. The one that blinks is this one.</p>
+      <p className="muted wz-sub">{t.identifySub}</p>
 
       <div className="device device-static">
         <Icon name="bt" size="sm" />
         <span className="device-txt">
           <span className="mono strong">{stripName}</span>
-          <span className="muted t-12">ready to test</span>
+          <span className="muted t-12">{t.readyToTest}</span>
         </span>
       </div>
 
@@ -44,20 +46,20 @@ export default function WizardIdentify({
 
       <button type="button" className="btn btn-secondary" onClick={handleBlink} disabled={blinking} data-od-id="wz-flash">
         <Icon name="flash" size="sm" />
-        {blinking ? "Blinking…" : blinked ? "Blink again" : "Blink to identify"}
+        {blinking ? t.blinking : blinked ? t.blinkAgain : t.blinkToIdentify}
       </button>
 
       {blinked && (
         <div className="ask">
-          <p className="t-20">Is this your strip?</p>
+          <p className="t-20">{t.isThisYours}</p>
           <Choices
-            label="Is this your strip?"
+            label={t.isThisYours}
             columns={2}
             value={value}
             onChoose={onChoose}
             options={[
-              { value: "yes", label: "Yes, this one" },
-              { value: "no", label: "No, back to the list" },
+              { value: "yes", label: t.yesThisOne },
+              { value: "no", label: t.noBackToList },
             ]}
           />
         </div>

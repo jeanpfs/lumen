@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Icon, type IconName } from "./Icon";
 import type { Link } from "../state/types";
+import { useT } from "../i18n";
 
 /** `style` with the `--c` custom property the stylesheet reads. */
 export const colourVar = (rgb: string): CSSProperties => ({ ["--c" as string]: rgb });
@@ -27,13 +28,12 @@ export function PageHead({
   );
 }
 
-const PRESUMED_TIP = "The strip does not confirm commands. The state shown is the last one sent.";
-
 export function Presumed({ withText = true }: { withText?: boolean }) {
+  const t = useT().shell;
   return (
-    <span className="presumed" title={PRESUMED_TIP}>
+    <span className="presumed" title={t.presumedTip}>
       <Icon name="approx" size="sm" />
-      <span className={withText ? "" : "sr-only"}>presumed state</span>
+      <span className={withText ? "" : "sr-only"}>{t.presumedState}</span>
     </span>
   );
 }
@@ -49,12 +49,13 @@ export function PowerButton({
   onToggle: () => void;
   disabled?: boolean;
 }) {
+  const t = useT().shell;
   return (
     <button
       type="button"
       className={`power ${on ? "is-on" : ""}`}
       aria-pressed={on}
-      aria-label={`${on ? "Turn off" : "Turn on"} ${name}`}
+      aria-label={on ? t.turnOff(name) : t.turnOn(name)}
       disabled={disabled}
       onClick={onToggle}
     >
@@ -116,30 +117,32 @@ export function StateBlock({
   );
 }
 
-const LINK_LABEL: Record<Link, string> = {
-  live: "Live",
-  unknown: "No contact yet",
-  unreachable: "Unreachable",
-  retrying: "Retrying…",
+const LINK_LABEL: Record<Link, "linkLive" | "linkUnknown" | "linkUnreachable" | "linkRetrying"> = {
+  live: "linkLive",
+  unknown: "linkUnknown",
+  unreachable: "linkUnreachable",
+  retrying: "linkRetrying",
 };
 const LINK_BADGE: Record<Link, string> = { live: "live", unknown: "queue", unreachable: "unreachable", retrying: "retrying" };
 const LINK_DOT: Record<Link, string> = { live: "on", unknown: "queue", unreachable: "unreachable", retrying: "partial" };
 
 export function LinkBadge({ link }: { link: Link }) {
+  const t = useT().shell;
   return (
     <span className={`badge badge-${LINK_BADGE[link]}`}>
       <span className={`dot ${LINK_DOT[link]}`} />
-      {LINK_LABEL[link]}
+      {t[LINK_LABEL[link]]}
     </span>
   );
 }
 
 export function RetryButton({ link, onRetry }: { link: Link; onRetry: () => void }) {
+  const t = useT().shell;
   const busy = link === "retrying";
   return (
     <button type="button" className="btn btn-secondary btn-tight" disabled={busy} onClick={onRetry}>
       <Icon name="refresh" size="sm" />
-      {busy ? "Retrying…" : "Try again"}
+      {busy ? t.linkRetrying : t.tryAgain}
     </button>
   );
 }

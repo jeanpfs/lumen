@@ -2,10 +2,12 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useApp } from "../state/store";
 import { StateBlock } from "./parts";
+import { useT } from "../i18n";
 
 /** Covers the whole app while Bluetooth is off: nothing in Lumen works without it. */
 export function BluetoothGate() {
   const { state, actions } = useApp();
+  const t = useT().shell;
   const off = state.bluetooth === "off";
   const button = useRef<HTMLButtonElement>(null);
 
@@ -23,18 +25,18 @@ export function BluetoothGate() {
   if (!off) return null;
   const android = window.LumenNative !== undefined;
   return createPortal(
-    <div className="bt-gate" role="alertdialog" aria-modal="true" aria-label="Bluetooth is off">
+    <div className="bt-gate" role="alertdialog" aria-modal="true" aria-label={t.btOffTitle}>
       <StateBlock
         icon="linkOff"
-        title="Bluetooth is off"
+        title={t.btOffTitle}
         text={
           android
-            ? "Lumen only works with Bluetooth on. Turn it on to continue."
-            : "Lumen only works with Bluetooth on. Turn it on in system settings; this screen goes away by itself."
+            ? t.btOffTextAndroid
+            : t.btOffTextDesktop
         }
         actions={
           <button ref={button} className="btn btn-primary" onClick={actions.enableBluetooth}>
-            {android ? "Turn on Bluetooth" : "Open Bluetooth settings"}
+            {android ? t.btTurnOn : t.btOpenSettings}
           </button>
         }
       />
