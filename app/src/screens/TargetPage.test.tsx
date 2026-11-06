@@ -17,11 +17,11 @@ function setup(target: { kind: "group" | "strip"; id: string }, tab: "general" |
 }
 
 describe("TargetPage", () => {
-  it("shows the name, three tabs and marks the current one", async () => {
+  it("shows the name and its tabs (Panel only on a group) and marks the current one", async () => {
     setup({ kind: "group", id: "living-room" }, "color");
     expect(await screen.findByRole("heading", { name: "Living room" })).toBeInTheDocument();
     const tabs = screen.getByRole("tablist");
-    expect(within(tabs).getAllByRole("tab").map((t) => t.textContent)).toEqual(["General", "Color", "Modes"]);
+    expect(within(tabs).getAllByRole("tab").map((t) => t.textContent)).toEqual(["General", "Color", "Modes", "Panel"]);
     expect(within(tabs).getByRole("tab", { name: "Color" })).toHaveAttribute("aria-selected", "true");
   });
 

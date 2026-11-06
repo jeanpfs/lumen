@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { useRoute } from "./router";
-import { AppProvider, useApp } from "./state/store";
+import { AppProvider, useApp, type Backend } from "./state/store";
 import { BluetoothGate } from "./ui/BluetoothGate";
 import { Shell } from "./ui/Shell";
 import { Home } from "./screens/Home";
 import { TargetPage } from "./screens/TargetPage";
 import { Welcome } from "./screens/Welcome";
 import { Wizard } from "./screens/Wizard";
+import { PanelBuilder } from "./screens/PanelBuilder";
+import { EffectBuilder } from "./screens/EffectBuilder";
 import { FirstRun } from "./screens/FirstRun";
 
 function Routes() {
@@ -22,6 +24,10 @@ function Routes() {
   if (route.name === "add") {
     return <Wizard recalibrate={route.param} onClose={() => (route.param ? go("strip", route.param) : go("home"))} go={go} />;
   }
+
+  // the panel and effect builders are full-screen too
+  if (state.loaded && route.name === "panel" && route.param) return <PanelBuilder key={route.param} groupId={route.param} go={go} />;
+  if (state.loaded && route.name === "effect" && route.param) return <EffectBuilder key={route.param} groupId={route.param} go={go} />;
 
   // nothing to control yet: only the way into the wizard, with no menus or header
   if (!state.loaded) return null;
@@ -45,9 +51,9 @@ function Routes() {
   );
 }
 
-export default function App() {
+export default function App({ backend }: { backend?: Backend } = {}) {
   return (
-    <AppProvider>
+    <AppProvider backend={backend}>
       <Routes />
       <BluetoothGate />
     </AppProvider>
