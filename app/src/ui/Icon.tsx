@@ -35,6 +35,7 @@ const ICONS = {
   moon: "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z",
   strip: "M3 12h18M5 9v6M9 9v6M13 9v6M17 9v6M21 9v6",
   play: "M7 4v16l13-8z",
+  pause: "M8 5v14M16 5v14",
   flash: "M13 3 4 14h7l-1 7 9-11h-7z",
   send: "M4 12 20 4l-6 16-3-7z",
   edit: "M4 20h4L19 9l-4-4L4 16zM13 7l4 4",

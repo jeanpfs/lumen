@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
-export type RouteName = "home" | "group" | "strip" | "add";
-export type Tab = "general" | "color" | "modes";
+export type RouteName = "home" | "group" | "strip" | "add" | "panel" | "effect";
+export type Tab = "general" | "color" | "modes" | "panel";
 
 /**
  * `#group/<id>[/<tab>]` and `#strip/<id>[/<tab>]` are pages of one target; `?from=<groupId>` records that a strip
@@ -14,14 +14,14 @@ export interface Route {
   from?: string;
 }
 
-const NAMES: RouteName[] = ["home", "group", "strip", "add"];
-const TABS: Tab[] = ["general", "color", "modes"];
+const NAMES: RouteName[] = ["home", "group", "strip", "add", "panel", "effect"];
+const TABS: Tab[] = ["general", "color", "modes", "panel"];
 
 export function parseRoute(hash: string): Route {
   const [path, query = ""] = hash.replace(/^#/, "").split("?");
   const [name, id = "", tab = ""] = path.split("/");
   if (!(NAMES as string[]).includes(name)) return { name: "home" };
-  if ((name === "group" || name === "strip") && !id) return { name: "home" };
+  if ((name === "group" || name === "strip" || name === "panel" || name === "effect") && !id) return { name: "home" };
   const route: Route = { name: name as RouteName };
   if (id) route.param = decodeURIComponent(id);
   if ((name === "group" || name === "strip") && (TABS as string[]).includes(tab)) route.tab = tab as Tab;

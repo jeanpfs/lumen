@@ -1,11 +1,12 @@
 import { createContext, useContext } from "react";
 import type { Lang } from "./lang";
+import { panel } from "./panel";
 import { settings } from "./settings";
 import { shell } from "./shell";
 import { targets } from "./targets";
 import { wizard } from "./wizard";
 
-const bundles = { settings, shell, targets, wizard };
+const bundles = { panel, settings, shell, targets, wizard };
 
 export type Messages = { [K in keyof typeof bundles]: (typeof bundles)[K]["en"] };
 

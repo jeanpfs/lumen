@@ -10,13 +10,15 @@ import type { TargetRef } from "../state/types";
 import type { Go, Tab } from "../router";
 import { ColorTab } from "./Color";
 import { ModesTab } from "./Modes";
+import { PanelTab } from "./PanelTab";
 import { GroupGeneral } from "./GroupGeneral";
 import { StripGeneral } from "./StripGeneral";
 
-const TABS: [Tab, "tabGeneral" | "tabColor" | "tabModes"][] = [
+const TABS: [Tab, "tabGeneral" | "tabColor" | "tabModes" | "tabPanel"][] = [
   ["general", "tabGeneral"],
   ["color", "tabColor"],
   ["modes", "tabModes"],
+  ["panel", "tabPanel"],
 ];
 
 /** One group or one strip: fixed header, tabs General · Color · Modes. The target is whatever the route says. */
@@ -126,7 +128,7 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
       </div>
 
       <div className="tabs" role="tablist" aria-label={t.target.sectionsOf(found.name)}>
-        {TABS.map(([id, label]) => (
+        {TABS.filter(([id]) => id !== "panel" || isGroup).map(([id, label]) => (
           <button
             key={id}
             type="button"
@@ -160,6 +162,11 @@ export function TargetPage({ target, tab, from, go }: { target: TargetRef; tab: 
       {tab === "modes" && (
         <div role="tabpanel" id="tabpanel-modes" aria-labelledby="tab-modes">
           <ModesTab target={target} />
+        </div>
+      )}
+      {tab === "panel" && isGroup && (
+        <div role="tabpanel" id="tabpanel-panel" aria-labelledby="tab-panel">
+          <PanelTab groupId={target.id} go={go} />
         </div>
       )}
 

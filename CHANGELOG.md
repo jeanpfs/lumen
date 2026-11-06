@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Brazilian Portuguese UI. The app follows the phone's or computer's language (any Portuguese
   gets pt-BR, everything else English); the globe button on Home picks a language manually.
+- Panels: a group's **Panel** tab lays its strips out on a grid (a dance floor, a wall, a bar front).
+  A three-step builder sets the format, lights each strip so you tap where it is, and picks the
+  corner and sweep the order follows (it also reorders the group). **Create effect** starts from a
+  template, lets you pick the path (or draw it), what the light does, color and pace, with a live
+  preview, tests it on the real strips, and saves it. Layouts and saved effects are kept on the
+  device, and effects are played by the app (they stop when it closes).
+- `npm run dev` then `/?sim`, or a build made with `VITE_SIM=1` (for an emulator, which has no
+  Bluetooth), runs the UI with 16 pretend strips. Release builds do not include it.
 
 ### Fixed
 
